@@ -6,6 +6,7 @@ const authRoute = require("./routes/authRoute");
 const patientRoute = require("./routes/patientRoute");
 const aiRoute = require("./routes/aiRoutes");
 const chatHistoryRoute = require("./routes/chatHistoryRoute");
+const slotRoutes = require("./routes/slotRoutes");
 
 const app = express();
 dotenv.config();
@@ -28,6 +29,7 @@ app.use("/api/auth", authRoute); // Authentication routes
 app.use("/api/patients", patientRoute); // Patient management routes
 app.use("/api/ai",aiRoute); // AI routes
 app.use("/api/chat-history",chatHistoryRoute); // Chat history routes
+app.use("/api/slots",slotRoutes);
 
 app.listen(process.env.PORT || 5000, () => {
   console.log(`Server is running on port ${process.env.PORT || 5000}`);

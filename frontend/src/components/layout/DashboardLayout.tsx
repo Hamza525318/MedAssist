@@ -11,7 +11,8 @@ import {
   LogOut, 
   Menu, 
   X,
-  Bell
+  Bell,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -61,7 +62,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Patients', href: '/patients', icon: Users },
-    { name: 'Chat Assistant', href: '/chat', icon: MessageSquare },
+    { name: 'Chat', href: '/chat', icon: MessageSquare, current: pathname === '/chat' },
+    { name: 'Slot Management', href: '/slots', icon: Calendar, current: pathname === '/slots' },
     // { name: 'Upload Reports', href: '/upload-report', icon: Upload },
   ];
 

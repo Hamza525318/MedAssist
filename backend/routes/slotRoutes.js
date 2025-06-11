@@ -1,23 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { protect, authorize } = require('../middleware/auth');
 const {
   createSlot,
   getSlots,
   updateSlot,
   deleteSlot
 } = require('../controller/slotController');
+const verifyJwt = require("../middleware/auth")
 
-// All routes require authentication
-router.use(protect);
 
-// Doctor only routes
-router.route('/')
-  .post(authorize('doctor'), createSlot)
-  .get(getSlots);
+router.post("/get-slots",verifyJwt,getSlots);
+router.post("/create-slot",verifyJwt,createSlot);
+router.put("/update-slot/:id",verifyJwt,updateSlot);
+router.delete("/delete-slot/:id",verifyJwt,deleteSlot);
 
-router.route('/:id')
-  .put(authorize('doctor'), updateSlot)
-  .delete(authorize('doctor'), deleteSlot);
 
 module.exports = router; 

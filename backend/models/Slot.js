@@ -10,7 +10,13 @@ const SlotSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
-  hour: {
+  startHour: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 23
+  },
+  endHour: {
     type: Number,
     required: true,
     min: 0,
@@ -34,8 +40,8 @@ const SlotSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Ensure one slot per doctor/date/hour
-SlotSchema.index({ doctorId: 1, date: 1, hour: 1 }, { unique: true });
+// Ensure one slot per doctor/date/time range
+SlotSchema.index({ doctorId: 1, date: 1, startHour: 1, endHour: 1 }, { unique: true });
 
 // Virtual for checking if slot is full
 SlotSchema.virtual('isFull').get(function() {

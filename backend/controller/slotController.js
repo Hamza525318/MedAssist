@@ -3,14 +3,23 @@ const Slot = require('../models/Slot');
 // Create a new slot
 const createSlot = async (req, res) => {
   try {
-    const { date, hour, capacity, location } = req.body;
+    const { date, startHour, endHour, capacity, location } = req.body;
+    console.log("CREATE SLOT DATA", req.body);
     const doctorId = req.user.id; // From auth middleware
 
     // Validate required fields
-    if (!date || !hour || !capacity || !location) {
+    if (!date || !startHour || !endHour || !capacity || !location) {
       return res.status(400).json({
         success: false,
         message: 'All fields are required'
+      });
+    }
+
+    // Validate time range
+    if (startHour >= endHour) {
+      return res.status(400).json({
+        success: false,
+        message: 'End time must be after start time'
       });
     }
 
@@ -18,7 +27,8 @@ const createSlot = async (req, res) => {
     const slot = await Slot.create({
       doctorId,
       date,
-      hour,
+      startHour,
+      endHour,
       capacity,
       location
     });
@@ -45,8 +55,10 @@ const createSlot = async (req, res) => {
 // Get slots with filters
 const getSlots = async (req, res) => {
   try {
-    const { date, doctorId } = req.query;
+    const { date, doctorId } = req.body;
     const query = {};
+
+    console.log("GET SLOTS QUERY",req.body);
 
     // Add filters if provided
     if (date) {
@@ -85,7 +97,7 @@ const getSlots = async (req, res) => {
 const updateSlot = async (req, res) => {
   try {
     const { id } = req.params;
-    const { capacity, location } = req.body;
+    const {date, startHour, endHour, capacity, location } = req.body;
 
     // Find slot and verify ownership
     const slot = await Slot.findOne({ _id: id, doctorId: req.user.id });
