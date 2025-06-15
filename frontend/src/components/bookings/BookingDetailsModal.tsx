@@ -10,6 +10,7 @@ interface BookingDetailsModalProps {
   booking: BookingData;
   setSuccessMessage: (message: string | null) => void;
   setError: (error: string | null) => void;
+  onEdit: () => void;
 }
 
 const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
@@ -17,7 +18,8 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
   onClose,
   booking,
   setSuccessMessage,
-  setError
+  setError,
+  onEdit
 }) => {
   if (!isOpen) return null;
 
@@ -101,7 +103,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                 <div className="mt-2 grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-500">Date</p>
-                    <p className="text-sm font-medium text-gray-900">{booking.slotDate}</p>
+                    <p className="text-sm font-medium text-gray-900">{booking.dob}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Time</p>

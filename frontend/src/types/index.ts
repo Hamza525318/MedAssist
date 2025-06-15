@@ -30,7 +30,7 @@ export interface BookingData {
   id: string;
   patientName: string;
   patientId: string;
-  slotDate: string;
+  dob: string;
   slotTime: string;
   status: 'pending' | 'accepted' | 'rejected' | 'checkedIn' | 'completed';
   reason: string;

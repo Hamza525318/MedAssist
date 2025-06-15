@@ -12,7 +12,6 @@ const BookingFilters: React.FC<BookingFiltersProps> = ({ onFilterChange }) => {
   const [filters, setFilters] = useState({
     dateRange: { start: '', end: '' },
     slot: '',
-    status: '',
     search: ''
   });
 
@@ -47,7 +46,7 @@ const BookingFilters: React.FC<BookingFiltersProps> = ({ onFilterChange }) => {
         </button>
 
         {/* Filter Section */}
-        <div className={`${isFilterOpen ? 'block' : 'hidden'} md:block md:flex md:items-center md:space-x-4 flex-1`}>
+        <div className={`${isFilterOpen ? 'block' : 'hidden'} md:flex md:items-center md:space-x-4 flex-1`}>
           {/* Date Range */}
           <div className="flex flex-col md:flex-row gap-2">
             <input
@@ -76,20 +75,6 @@ const BookingFilters: React.FC<BookingFiltersProps> = ({ onFilterChange }) => {
             <option value="evening">Evening (6 PM - 9 PM)</option>
           </select>
 
-          {/* Status Filter */}
-          <select
-            className="input"
-            value={filters.status}
-            onChange={(e) => handleFilterChange('status', e.target.value)}
-          >
-            <option value="">All Status</option>
-            <option value="Pending">Pending</option>
-            <option value="Accepted">Accepted</option>
-            <option value="Rejected">Rejected</option>
-            <option value="CheckedIn">Checked In</option>
-            <option value="Completed">Completed</option>
-          </select>
-
           {/* Clear Filters Button */}
           <button
             className="btn btn-outline"
@@ -97,13 +82,11 @@ const BookingFilters: React.FC<BookingFiltersProps> = ({ onFilterChange }) => {
               setFilters({
                 dateRange: { start: '', end: '' },
                 slot: '',
-                status: '',
                 search: ''
               });
               onFilterChange?.({
                 dateRange: { start: '', end: '' },
                 slot: '',
-                status: '',
                 search: ''
               });
             }}

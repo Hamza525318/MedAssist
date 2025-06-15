@@ -41,7 +41,7 @@ export interface BookingData {
   slotId: string;
   patientId: string;
   patientName: string; // For display purposes
-  slotDate: string;
+  dob: string;
   slotTime: string;
   requestedAt: string;
   status: 'Pending' | 'Accepted' | 'Rejected' | 'CheckedIn' | 'Completed';

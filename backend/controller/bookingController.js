@@ -1,11 +1,12 @@
 const BookingRequest = require('../models/BookingRequest');
 const Slot = require('../models/Slot');
+const Patient = require('../models/Patient');
 
 // Create a new booking request
 const createBooking = async (req, res) => {
   try {
-    const { slotId, reason } = req.body;
-    const patientId = req.user.id; // From auth middleware
+    const { slotId, reason, patientId, patientData } = req.body;
+    let finalPatientId = patientId;
 
     // Validate required fields
     if (!slotId) {
@@ -31,10 +32,29 @@ const createBooking = async (req, res) => {
       });
     }
 
+    // If patientData is provided, create a new patient
+    if (patientData) {
+      // Generate a new patient ID (5 digits)
+      const lastPatient = await Patient.findOne().sort({ patientId: -1 });
+      const newPatientId = lastPatient ? lastPatient.patientId + 1 : 10000;
+
+      // Create new patient
+      const newPatient = await Patient.create({
+        patientId: newPatientId,
+        name: patientData.name,
+        contactNumber: patientData.contactNumber,
+        age: patientData.age,
+        gender: patientData.gender,
+        dob: new Date(patientData.dob)
+      });
+
+      finalPatientId = newPatient._id;
+    }
+
     // Check if patient already has a booking for this slot
     const existingBooking = await BookingRequest.findOne({
       slotId,
-      patientId,
+      patientId: finalPatientId,
       status: { $in: ['Pending', 'Accepted'] }
     });
 
@@ -48,16 +68,21 @@ const createBooking = async (req, res) => {
     // Create booking request
     const booking = await BookingRequest.create({
       slotId,
-      patientId,
+      patientId: finalPatientId,
       reason
     });
 
     // Increment slot's booked count
     await slot.incrementBookedCount();
 
+    // Populate the booking with patient and slot details
+    const populatedBooking = await BookingRequest.findById(booking._id)
+      .populate('slotId', 'date startHour endHour location capacity bookedCount')
+      .populate('patientId', 'name patientId contactNumber age gender dob');
+
     return res.status(201).json({
       success: true,
-      data: booking
+      data: populatedBooking
     });
   } catch (error) {
     console.error('Create booking error:', error);
@@ -71,7 +96,17 @@ const createBooking = async (req, res) => {
 // Get bookings with filters
 const getBookings = async (req, res) => {
   try {
-    const { slotId, patientId, status } = req.query;
+    const { 
+      slotId, 
+      patientId, 
+      status,
+      startDate,
+      endDate,
+      search,
+      page = 1,
+      limit = 10
+    } = req.query;
+
     const query = {};
 
     // Add filters if provided
@@ -79,19 +114,49 @@ const getBookings = async (req, res) => {
     if (patientId) query.patientId = patientId;
     if (status) query.status = status;
 
+    // Date range filter
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { reason: { $regex: search, $options: 'i' } },
+        { 'patientId.name': { $regex: search, $options: 'i' } },
+        { 'patientId.patientId': { $regex: search, $options: 'i' } }
+      ];
+    }
+
     // If no filters provided, only show bookings for the logged-in user
     if (!slotId && !patientId) {
       query.patientId = req.user.id;
     }
 
+    // Calculate skip value for pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get total count for pagination
+    const total = await BookingRequest.countDocuments(query);
+
     const bookings = await BookingRequest.find(query)
       .sort({ createdAt: -1 })
-      .populate('slotId', 'date hour location')
-      .populate('patientId', 'name email');
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate('slotId', 'date startHour endHour location capacity bookedCount')
+      .populate('patientId', 'name patientId contactNumber age gender dob');
 
     return res.status(200).json({
       success: true,
-      data: bookings
+      data: bookings,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     console.error('Get bookings error:', error);

@@ -1,20 +1,45 @@
 "use client";
 
-import React, { useState,useEffect } from 'react';
+import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import BookingFilters from '@/components/bookings/BookingFilters';
 import BookingTable from '@/components/bookings/BookingTable';
 import BookingDetailsModal from '@/components/bookings/BookingDetailsModal';
+import CreateBookingModal from '@/components/bookings/CreateBookingModal';
+import StatusTabs from '@/components/bookings/StatusTabs';
 import { BookingData } from '@/types';
+
+const bookings: BookingData[] = [
+  {
+    _id: '1',
+    slotId: 'slot1',
+    patientId: 'P001',
+    patientName: 'John Doe',
+    dob: '2024-03-20',
+    slotTime: '09:00 AM',
+    status: 'Pending',
+    reason: 'Regular checkup',
+    contactNumber: '+1234567890',
+    age: 35,
+    gender: 'Male',
+    requestedAt: '2024-03-19T10:00:00Z',
+    updatedAt: '2024-03-19T10:00:00Z'
+  },
+  // Add more mock data as needed
+];
 
 export default function BookingsPage() {
   const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeStatus, setActiveStatus] = useState('Pending');
 
   // Show success message for 3 seconds
-    useEffect(() => {
+  React.useEffect(() => {
     if (successMessage) {
       const timer = setTimeout(() => {
         setSuccessMessage(null);
@@ -26,6 +51,46 @@ export default function BookingsPage() {
   const handleBookingSelect = (booking: BookingData) => {
     setSelectedBooking(booking);
     setIsDetailsModalOpen(true);
+  };
+
+  const handleEditBooking = (booking: BookingData) => {
+    setSelectedBooking(booking);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (bookingData: Partial<BookingData>) => {
+    try {
+      // TODO: Implement API call
+      console.log('Edit booking:', bookingData);
+      setSuccessMessage('Booking request updated successfully');
+      setIsEditModalOpen(false);
+    } catch (error) {
+      setError('Failed to update booking request');
+    }
+  };
+
+  const handleCreateBooking = () => {
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateSubmit = async (bookingData: Partial<BookingData>) => {
+    try {
+      // TODO: Implement API call
+      console.log('Create booking:', bookingData);
+      setSuccessMessage('Booking request created successfully');
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      setError('Failed to create booking request');
+    }
+  };
+
+  const handleDeleteBooking = (booking: BookingData) => {
+    // TODO: Implement delete functionality
+    console.log('Delete booking:', booking);
+  };
+
+  const handleStatusChange = (status: string) => {
+    setActiveStatus(status);
   };
 
   return (
@@ -55,17 +120,35 @@ export default function BookingsPage() {
           </div>
         )}
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-800">Booking Management</h1>
-          <p className="text-gray-600">Manage patient booking requests for your available slots</p>
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-800">Booking Management</h1>
+            <p className="text-gray-600">Manage patient booking requests for your available slots</p>
+          </div>
+          <button 
+            className="btn btn-primary mt-4 sm:mt-0"
+            onClick={() => setIsCreateModalOpen(true)}
+          >
+            <Plus size={18} className="mr-2" />
+            Create Booking Request
+          </button>
         </div>
 
         <BookingFilters />
 
+        <div className="mb-6">
+          <StatusTabs 
+            activeStatus={activeStatus}
+            onStatusChange={handleStatusChange}
+          />
+        </div>
+
         <BookingTable 
-          onBookingSelect={handleBookingSelect}
-          setSuccessMessage={setSuccessMessage}
-          setError={setError}
+          bookings={bookings}
+          onViewDetails={handleBookingSelect}
+          onEdit={handleEditBooking}
+          onDelete={handleDeleteBooking}
+          activeStatus={activeStatus}
         />
 
         {selectedBooking && (
@@ -75,8 +158,26 @@ export default function BookingsPage() {
             booking={selectedBooking}
             setSuccessMessage={setSuccessMessage}
             setError={setError}
+            onEdit={() => {
+              setIsDetailsModalOpen(false);
+              setIsEditModalOpen(true);
+            }}
           />
         )}
+
+        <CreateBookingModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={handleCreateSubmit}
+        />
+
+        <CreateBookingModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSubmit={handleEditSubmit}
+          booking={selectedBooking || undefined}
+          isEditing={true}
+        />
       </div>
     </DashboardLayout>
   );

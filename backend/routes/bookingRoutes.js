@@ -1,24 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { protect, authorize } = require('../middleware/auth');
+const verifyJwt = require('../middleware/auth');
 const {
   createBooking,
   getBookings,
   updateBooking,
   deleteBooking
 } = require('../controller/bookingController');
+const verifyJwt = require('../middleware/auth');
 
-// All routes require authentication
-router.use(protect);
 
-// Patient routes
-router.route('/')
-  .post(authorize('patient'), createBooking)
-  .get(getBookings);
-
-// Doctor routes for managing bookings
-router.route('/:id')
-  .put(authorize('doctor'), updateBooking)
-  .delete(authorize('doctor', 'patient'), deleteBooking);
+router.post("/create",verifyJwt,createBooking);
+router.get("/get-bookings",verifyJwt,getBookings);
+router.put("/update-booking",verifyJwt,updateBooking);
+router.delete("/delete-booking",verifyJwt,deleteBooking);
 
 module.exports = router; 
