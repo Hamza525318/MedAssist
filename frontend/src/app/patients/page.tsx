@@ -36,7 +36,7 @@ export default function PatientsPage() {
   const router = useRouter();
   const {addUserData} = useAuth();
   
-  // Check authentication and fetch user profile
+
   // useEffect(() => {
   //   const checkAuth = async () => {
   //     const token = getAuthToken();

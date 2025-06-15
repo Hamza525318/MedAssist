@@ -35,3 +35,43 @@ export interface GetPatientsParams {
     limit?: number;
     search?: string;
 }
+
+export interface BookingData {
+  _id?: string; // MongoDB ID from backend
+  slotId: string;
+  patientId: string;
+  patientName: string; // For display purposes
+  slotDate: string;
+  slotTime: string;
+  requestedAt: string;
+  status: 'Pending' | 'Accepted' | 'Rejected' | 'CheckedIn' | 'Completed';
+  reason: string;
+  updatedAt: string;
+  // Additional fields for display
+  contactNumber?: string;
+  age?: number;
+  gender?: string;
+}
+
+export interface BookingListResponse {
+  success: boolean;
+  data: BookingData[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface GetBookingsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+  slot?: string;
+}

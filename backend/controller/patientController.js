@@ -8,13 +8,13 @@ const cloudinary = require("../utils/cloudinary");
 const generatePatientId = require("../utils/generatedPatientId");
 
 const createNewPatient = async (req, res) => {
-  const { name, dob, gender, contact, address, history } = req.body;
+  const { name, dob, gender, contact, address, history,age } = req.body;
   console.log("PATIENT DATA", req.body);
 
-  if (!name || !dob || !gender) {
+  if (!name || !dob || !gender || !age) {
     return res
       .status(400)
-      .json({ message: "name, dob, and gender are required." });
+      .json({ message: "name, dob, age, and gender are required." });
   }
 
   try {
@@ -42,6 +42,7 @@ const createNewPatient = async (req, res) => {
       contactNumber: contact,
       address,
       history: historyArray,
+      age,
     });
 
     await newPatient.save();

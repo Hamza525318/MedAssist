@@ -24,6 +24,13 @@ const UserSchema = new mongoose.Schema(
       enum: ["Doctor", "Admin"],
       default: "Doctor",
     },
+    signatureUrl: {
+      type: String,
+      default: null,
+    },
+    cloudinaryId: {
+      type: String,
+    }
   },
   { timestamps: true }
 );

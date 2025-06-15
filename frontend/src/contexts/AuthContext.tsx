@@ -17,6 +17,7 @@ interface User{
     name: string;
     email: string;
     role: string;
+    signatureUrl?: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);

@@ -12,7 +12,8 @@ import {
   Menu, 
   X,
   Bell,
-  Calendar
+  Calendar,
+  CalendarClock
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -43,10 +44,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           // console.log("RESPONSE", response);
           if(response.success){
             addUserData({
-              id: response?.data?._id,
-              name: response?.data?.name,
-              email: response?.data?.email,
-              role: response?.data?.role
+              id: response?.data?.id || '',
+              name: response?.data?.name || '',
+              email: response?.data?.email || '',
+              role: response?.data?.role || '',
+              signatureUrl: response?.data?.signatureUrl || '',
             });
           }
         } catch (err) {
@@ -64,6 +66,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { name: 'Patients', href: '/patients', icon: Users },
     { name: 'Chat', href: '/chat', icon: MessageSquare, current: pathname === '/chat' },
     { name: 'Slot Management', href: '/slots', icon: Calendar, current: pathname === '/slots' },
+    { name: 'Booking Management', href: '/bookings', icon: CalendarClock, current: pathname === '/bookings' },
     // { name: 'Upload Reports', href: '/upload-report', icon: Upload },
   ];
 

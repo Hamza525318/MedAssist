@@ -44,7 +44,8 @@ export default function ChatPage() {
             id: response.data.id,
             name: response.data.name,
             email: response.data.email,
-            role: response.data.role
+            role: response.data.role,
+            signatureUrl: response.data.signatureUrl || '',
           });
         }
       } catch (err) {

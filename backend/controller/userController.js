@@ -98,9 +98,11 @@ const getProfile = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role,  
         createdAt: user.createdAt,
-        updatedAt: user.updatedAt
+        updatedAt: user.updatedAt,
+        signatureUrl: user.signatureUrl,
+        cloudinaryId: user.cloudinaryId
       }
     });
   } catch (err) {
