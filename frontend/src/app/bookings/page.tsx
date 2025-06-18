@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import BookingFilters from '@/components/bookings/BookingFilters';
@@ -9,27 +9,10 @@ import BookingDetailsModal from '@/components/bookings/BookingDetailsModal';
 import CreateBookingModal from '@/components/bookings/CreateBookingModal';
 import StatusTabs from '@/components/bookings/StatusTabs';
 import { BookingData } from '@/types';
-
-const bookings: BookingData[] = [
-  {
-    _id: '1',
-    slotId: 'slot1',
-    patientId: 'P001',
-    patientName: 'John Doe',
-    dob: '2024-03-20',
-    slotTime: '09:00 AM',
-    status: 'Pending',
-    reason: 'Regular checkup',
-    contactNumber: '+1234567890',
-    age: 35,
-    gender: 'Male',
-    requestedAt: '2024-03-19T10:00:00Z',
-    updatedAt: '2024-03-19T10:00:00Z'
-  },
-  // Add more mock data as needed
-];
+import { getBookings, deleteBooking } from '@/utils/api/booking';
 
 export default function BookingsPage() {
+  const [bookings, setBookings] = useState<BookingData[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<BookingData | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -37,16 +20,34 @@ export default function BookingsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState('Pending');
+  const [isLoading, setIsLoading] = useState(false);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    pages: 0
+  });
 
-  // Show success message for 3 seconds
-  React.useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-      return () => clearTimeout(timer);
+  const fetchBookings = async (page = 1) => {
+    try {
+      setIsLoading(true);
+      const response = await getBookings({
+        status: activeStatus,
+        page,
+        limit: pagination.limit
+      });
+      setBookings(response.data);
+      setPagination(response.pagination);
+    } catch (error) {
+      setError('Failed to fetch bookings');
+    } finally {
+      setIsLoading(false);
     }
-  }, [successMessage]);
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, [activeStatus]);
 
   const handleBookingSelect = (booking: BookingData) => {
     setSelectedBooking(booking);
@@ -64,6 +65,7 @@ export default function BookingsPage() {
       console.log('Edit booking:', bookingData);
       setSuccessMessage('Booking request updated successfully');
       setIsEditModalOpen(false);
+      fetchBookings();
     } catch (error) {
       setError('Failed to update booking request');
     }
@@ -79,19 +81,35 @@ export default function BookingsPage() {
       console.log('Create booking:', bookingData);
       setSuccessMessage('Booking request created successfully');
       setIsCreateModalOpen(false);
+      fetchBookings();
     } catch (error) {
       setError('Failed to create booking request');
     }
   };
 
-  const handleDeleteBooking = (booking: BookingData) => {
-    // TODO: Implement delete functionality
-    console.log('Delete booking:', booking);
+  const handleDeleteBooking = async (booking: BookingData) => {
+    try {
+      await deleteBooking(booking._id);
+      setSuccessMessage('Booking deleted successfully');
+      fetchBookings();
+    } catch (error) {
+      setError('Failed to delete booking');
+    }
   };
 
   const handleStatusChange = (status: string) => {
     setActiveStatus(status);
   };
+
+  // Show success message for 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   return (
     <DashboardLayout>
@@ -127,7 +145,7 @@ export default function BookingsPage() {
           </div>
           <button 
             className="btn btn-primary mt-4 sm:mt-0"
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={handleCreateBooking}
           >
             <Plus size={18} className="mr-2" />
             Create Booking Request
@@ -149,6 +167,9 @@ export default function BookingsPage() {
           onEdit={handleEditBooking}
           onDelete={handleDeleteBooking}
           activeStatus={activeStatus}
+          isLoading={isLoading}
+          pagination={pagination}
+          onPageChange={fetchBookings}
         />
 
         {selectedBooking && (

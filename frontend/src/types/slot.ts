@@ -7,8 +7,8 @@ export interface Slot {
   capacity: number;
   location: string;
   bookedCount: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateSlotData {

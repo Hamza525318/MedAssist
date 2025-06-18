@@ -7,7 +7,7 @@ const {
   updateBooking,
   deleteBooking
 } = require('../controller/bookingController');
-const verifyJwt = require('../middleware/auth');
+
 
 
 router.post("/create",verifyJwt,createBooking);

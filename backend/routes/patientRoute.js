@@ -12,6 +12,7 @@ const {
   getAllPatientDetails,
   deletePatient,
   deleteReport,
+  searchPatientByQuery,
 } = require("../controller/patientController");
 const router = express.Router();
 
@@ -46,5 +47,6 @@ router.post("/delete-lab-report", verifyJwt,deleteReport);
 router.post("/get-patient-reports", verifyJwt, fetchPatientReports);
 router.post("/get-all-patients", verifyJwt, getAllPatientDetails);
 router.post("/delete-patient", verifyJwt, deletePatient);
+router.get("/search-patient",verifyJwt,searchPatientByQuery)
 
 module.exports = router;

@@ -1,0 +1,16 @@
+Authentication:
+
+(1) Login
+(2) Register
+(3) Forgot Password
+(4) Logout
+
+Pages:
+
+(1) My Bookings
+(2) Profile
+(3) Medical History
+
+Extra feature:
+(1)Once the prescription is setup by doctor, sending reminders to take medicines and users can track their usage based on it.
+(2) Weekly Wellness challenges

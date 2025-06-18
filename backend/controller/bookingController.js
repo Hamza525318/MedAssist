@@ -6,6 +6,7 @@ const Patient = require('../models/Patient');
 const createBooking = async (req, res) => {
   try {
     const { slotId, reason, patientId, patientData } = req.body;
+    console.log("Create Booking request",req.body);
     let finalPatientId = patientId;
 
     // Validate required fields
@@ -98,7 +99,6 @@ const getBookings = async (req, res) => {
   try {
     const { 
       slotId, 
-      patientId, 
       status,
       startDate,
       endDate,
@@ -109,9 +109,11 @@ const getBookings = async (req, res) => {
 
     const query = {};
 
+    console.log("GET BOOKINGS",status);
+
     // Add filters if provided
     if (slotId) query.slotId = slotId;
-    if (patientId) query.patientId = patientId;
+    // if (patientId) query.patientId = patientId;
     if (status) query.status = status;
 
     // Date range filter
@@ -131,21 +133,21 @@ const getBookings = async (req, res) => {
     }
 
     // If no filters provided, only show bookings for the logged-in user
-    if (!slotId && !patientId) {
-      query.patientId = req.user.id;
-    }
+    // if (!slotId && !patientId) {
+    //   query.patientId = req.user.id;
+    // }
 
     // Calculate skip value for pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // Get total count for pagination
     const total = await BookingRequest.countDocuments(query);
-
+    console.log("BOOKINGS DB Query",query);
     const bookings = await BookingRequest.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('slotId', 'date startHour endHour location capacity bookedCount')
+      .populate('slotId', 'date startHour endHour location capacity bookedCount doctorId')
       .populate('patientId', 'name patientId contactNumber age gender dob');
 
     return res.status(200).json({

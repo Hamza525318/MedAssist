@@ -344,6 +344,50 @@ const deleteReport = async (req, res) => {
   }
 };
 
+const searchPatientByQuery = async (req, res) => {
+  try {
+    const { search = '' } = req.query;
+
+    console.log('SEARCH QUERY FOR PATIENTS',search);
+
+    if (!search.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Search term is required.'
+      });
+    }
+
+    const searchRegex = new RegExp(search, 'i');
+    const filter = {
+      $or: []
+    };
+
+    // Add search by contact number or name
+    filter.$or.push(
+      { contactNumber: searchRegex },
+      { name: searchRegex }
+    );
+
+    // If numeric, also try to match patientId
+    if (/^\d+$/.test(search)) {
+      filter.$or.push({ patientId: Number(search) });
+    }
+
+    const results = await Patient.find(filter).limit(10).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: results
+    });
+  } catch (err) {
+    console.error('Search Patient Error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
 module.exports = {
   createNewPatient,
   getPatientDetails,
@@ -353,4 +397,5 @@ module.exports = {
   getAllPatientDetails,
   deletePatient,
   deleteReport,
+  searchPatientByQuery
 };

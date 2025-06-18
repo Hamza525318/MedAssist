@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { BookingData } from '@/types';
 import { getSlots } from '@/utils/api/slot';
-import { getPatients } from '@/utils/api/patient';
+import { searchPatient } from '@/utils/api/patient';
 import { createBooking } from '@/utils/api/booking';
 import { Slot } from '@/types/slot';
 import { PatientData } from '@/types/patient';
@@ -25,6 +25,7 @@ const CreateBookingModal: React.FC<CreateBookingModalProps> = ({
   isEditing = false
 }) => {
   const [formData, setFormData] = useState<Partial<BookingData>>({
+    _id: '',
     patientName: '',
     patientId: '',
     dob: '',
@@ -67,31 +68,31 @@ const CreateBookingModal: React.FC<CreateBookingModalProps> = ({
   const handlePatientSearch = async (value: string) => {
     if (!value) return;
 
+    // Only search if input is 5 or 10 digits
+    if (!(/^\d{5}$/.test(value) || /^\d{10}$/.test(value))) {
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const params: any = {};
+      console.log("SEARCH VALUE", value);
+      const response = await searchPatient(value);
       
-      if (value.length === 5) {
-        params.patientId = value;
-      } else if (value.length === 10) {
-        params.contactNumber = value;
-      }
-
-      if (Object.keys(params).length > 0) {
-        const response = await getPatients(params);
-        console.log("RESPONSE FOR PATIENT SEARCH",response);
-        if (response.data && response.data.length > 0) {
-          const patient = response.data[0];
-          setFormData({
-            ...formData,
-            patientName: patient.name,
-            patientId: patient.patientId,
-            contactNumber: patient.contactNumber,
-            age: patient.age || 0,
-            gender: patient.gender,
-            dob: patient.dob
-          });
-        }
+      if (response.data && response.data.length > 0) {
+        const patient = response.data[0];
+        // Format the DOB from ISO string to YYYY-MM-DD
+        const formattedDob = patient.dob ? new Date(patient.dob).toISOString().split('T')[0] : '';
+        
+        setFormData({
+          ...formData,
+          _id: patient._id,
+          patientName: patient.name,
+          patientId: patient.patientId,
+          contactNumber: patient.contactNumber,
+          age: patient.age || 0,
+          gender: patient.gender,
+          dob: formattedDob
+        });
       }
     } catch (error) {
       setError('Failed to fetch patient details');
@@ -122,13 +123,17 @@ const CreateBookingModal: React.FC<CreateBookingModalProps> = ({
             dob: formData.dob
           }
         } : {
-          patientId: formData.patientId
+          patientId: formData._id,
         })
       };
 
-      await createBooking(bookingData);
-      await onSubmit(formData);
-      onClose();
+      const response = await createBooking(bookingData);
+      if (response.success) {
+        await onSubmit(formData);
+        onClose();
+      } else {
+        throw new Error(response.message || 'Failed to create booking');
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to create booking');
     } finally {
@@ -213,18 +218,7 @@ const CreateBookingModal: React.FC<CreateBookingModalProps> = ({
                     onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
                   />
                 </div>
-                {isNewPatient && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Patient ID</label>
-                    <input
-                      type="text"
-                      required
-                      className="input mt-1"
-                      value={formData.patientId}
-                      onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-                    />
-                  </div>
-                )}
+               
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Contact Number</label>
                   <input

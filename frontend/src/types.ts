@@ -1,3 +1,5 @@
+import { Slot } from "./types/slot";
+
 export interface PatientData {
     _id?: string; // MongoDB ID from backend
     patientId: string;
@@ -74,4 +76,15 @@ export interface GetBookingsParams {
     end: string;
   };
   slot?: string;
+}
+
+export interface BookingResponse{
+  createdAt: string,
+  patientId: PatientData,
+  reason: string,
+  requestedAt: string,
+  slotId: Slot,
+  status: string,
+  updatedAt: string,
+  _id: string
 }

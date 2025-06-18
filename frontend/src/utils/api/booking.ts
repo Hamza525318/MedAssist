@@ -1,11 +1,40 @@
 import axios from "axios";
-import { BookingData } from "@/types";
+import { BookingData, BookingResponse } from "@/types/booking";
 import { getAuthToken } from "./auth";
+
+
+export interface UpdateBookingRequest {
+  status: string;
+}
 
 const API_BASE_URL = 'http://localhost:4000/api';
 
-interface CreateBookingRequest {
+export interface GetBookingsParams {
+  slotId?: string;
+  patientId?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface GetBookingsResponse {
+  success: boolean;
+  data: BookingData[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
+export interface CreateBookingRequest {
   slotId: string;
+  reason: string;
+  patientId?: string;
   patientData?: {
     name: string;
     contactNumber: string;
@@ -13,11 +42,55 @@ interface CreateBookingRequest {
     gender: string;
     dob: string;
   };
-  patientId?: string;
-  reason: string;
 }
 
-export const createBooking = async (bookingData: CreateBookingRequest): Promise<BookingData> => {
+export const getBookings = async (params: GetBookingsParams = {}): Promise<GetBookingsResponse> => {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await axios.get(`${API_BASE_URL}/bookings/get-bookings`, {
+      params,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    console.log("GET BOOKINGS RESPONSE",response);
+    return response.data;
+  } catch (error) {
+
+    console.log("BOOKINGS ERROR",error);
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch bookings');
+    }
+    throw new Error('Failed to fetch bookings');
+  }
+};
+
+export const deleteBooking = async (bookingId: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await axios.delete(`${API_BASE_URL}/bookings/${bookingId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Failed to delete booking');
+    }
+    throw new Error('Failed to delete booking');
+  }
+};
+
+export const createBooking = async (bookingData: CreateBookingRequest): Promise<BookingResponse> => {
   try {
     const token = getAuthToken();
     if (!token) {
@@ -35,11 +108,38 @@ export const createBooking = async (bookingData: CreateBookingRequest): Promise<
       }
     );
 
-    return response.data.data;
+    return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(error.response?.data?.message || 'Failed to create booking');
     }
     throw new Error('Failed to create booking');
+  }
+};
+
+export const updateBooking = async (bookingId: string, data: UpdateBookingRequest): Promise<BookingResponse> => {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await axios.put(
+      `${API_BASE_URL}/bookings/update-booking/${bookingId}`,
+      data,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Failed to update booking');
+    }
+    throw new Error('Failed to update booking');
   }
 };

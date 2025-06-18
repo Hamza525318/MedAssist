@@ -113,3 +113,25 @@ export const updatePatient = async (patientData: UpdatePatientData): Promise<{ s
     throw new Error('Failed to update patient');
   }
 };
+
+/**
+ * Function to search patients by query (name, contact number, or patient ID)
+ * @param search Search query string
+ * @returns Array of matching patients
+ */
+export const searchPatient = async (search: string): Promise<{ success: boolean; data: PatientData[] }> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/patients/search-patient?search=${search}`,{
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.log("ERROR WHILE SEARCH",error);
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Failed to search patients');
+    }
+    throw new Error('Failed to search patients');
+  }
+};
