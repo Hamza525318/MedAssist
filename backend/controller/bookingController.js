@@ -5,7 +5,7 @@ const Patient = require('../models/Patient');
 // Create a new booking request
 const createBooking = async (req, res) => {
   try {
-    const { slotId, reason, patientId, patientData } = req.body;
+    const { slotId, reason, patientId, patientData ,status} = req.body;
     console.log("Create Booking request",req.body);
     let finalPatientId = patientId;
 
@@ -70,7 +70,8 @@ const createBooking = async (req, res) => {
     const booking = await BookingRequest.create({
       slotId,
       patientId: finalPatientId,
-      reason
+      reason,
+      status: status
     });
 
     // Increment slot's booked count

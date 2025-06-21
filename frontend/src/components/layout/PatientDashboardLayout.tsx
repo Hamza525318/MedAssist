@@ -16,6 +16,7 @@ import {
   Award
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { patientAuthApi, removePatientAuthToken } from '@/utils/api/users/auth';
 import { useRouter } from 'next/navigation';
 
 interface PatientDashboardLayoutProps {
@@ -51,9 +52,22 @@ const PatientDashboardLayout: React.FC<PatientDashboardLayoutProps> = ({ childre
     setSidebarOpen(!sidebarOpen);
   };
 
-  const handleLogout = () => {
-    // In a real implementation, we would clear patient authentication here
-    router.push('/auth/patients/login');
+  const handleLogout = async () => {
+    try {
+      // Call the logout API
+      await patientAuthApi.logout();
+      
+      // Remove token from localStorage
+      removePatientAuthToken();
+      
+      // Redirect to login page
+      router.push('/auth/patients/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if API call fails, still remove token and redirect
+      removePatientAuthToken();
+      router.push('/auth/patients/login');
+    }
   };
 
   return (

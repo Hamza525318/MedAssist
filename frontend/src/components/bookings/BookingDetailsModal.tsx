@@ -89,7 +89,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
     try {
       setIsLoading(true);
       const { status } = confirmationModal;
-      
+      console.log("UPDATED STATUS FOR BOOKING",status);
       const response = await updateBooking(booking._id, { status });
       
       setSuccessMessage(`Booking status updated to ${status}`);

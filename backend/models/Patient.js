@@ -28,18 +28,24 @@ const PatientSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: true,
+      sparse: true, // Allows null values while maintaining uniqueness for non-null values
       unique: true,
       trim: true,
       lowercase: true,
       match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address'],
+      required: function() {
+        return this.password ? true : false;
+      }
     },
     password: {
       type: String,
-      required: true,
+      required: function() {
+        return this.email ? true : false;
+      },
       minlength: 8,
       select: false, // Don't return password by default in queries
     },
+    
     age:{
       type: Number,
       required: true,

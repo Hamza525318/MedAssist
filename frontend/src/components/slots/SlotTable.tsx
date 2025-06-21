@@ -11,23 +11,43 @@ interface SlotTableProps {
 
 export default function SlotTable({ slots, onEdit, onDelete }: SlotTableProps) {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setActiveMenuId(null);
+  // Update the click outside handler to check all refs
+useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    let clickedInsideMenu = false;
+    
+    // Check if click was inside any menu
+    menuRefs.current.forEach((ref) => {
+      if (ref && ref.contains(event.target as Node)) {
+        clickedInsideMenu = true;
       }
-    };
+    });
+    
+    if (!clickedInsideMenu) {
+      setActiveMenuId(null);
+    }
+  };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, []);
 
-  const handleMenuClick = (slotId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setActiveMenuId(activeMenuId === slotId ? null : slotId);
+
+  // Update the menu click handler to toggle the menu
+const handleMenuClick = (slotId: string, event: React.MouseEvent) => {
+  event.stopPropagation();
+  console.log('Menu clicked for slot:', slotId);
+  setActiveMenuId(activeMenuId === slotId ? null : slotId);
+};
+  
+  // Function to set ref for a specific slot
+  const setMenuRef = (slotId: string, element: HTMLDivElement | null) => {
+    if (element) {
+      menuRefs.current.set(slotId, element);
+    }
   };
 
   if (slots.length === 0) {
@@ -88,7 +108,7 @@ export default function SlotTable({ slots, onEdit, onDelete }: SlotTableProps) {
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-right">
-                  <div className="relative inline-block text-left" ref={menuRef}>
+                  <div className="relative inline-block text-left" ref={(el) => setMenuRef(slot._id, el)}>
                     <button
                       type="button"
                       onClick={(e) => handleMenuClick(slot._id, e)}
@@ -141,7 +161,7 @@ export default function SlotTable({ slots, onEdit, onDelete }: SlotTableProps) {
                 </p>
                 <p className="text-sm text-gray-500">{slot.location}</p>
               </div>
-              <div className="relative" ref={menuRef}>
+              <div className="relative" ref={(el) => setMenuRef(`mobile-${slot._id}`, el)}>
                 <button
                   type="button"
                   onClick={(e) => handleMenuClick(slot._id, e)}

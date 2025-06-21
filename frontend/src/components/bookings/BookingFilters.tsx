@@ -1,10 +1,18 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, X } from 'lucide-react';
+import { getSlots } from '@/utils/api/slot';
+import { Slot } from '@/types/slot';
 
 interface BookingFiltersProps {
-  onFilterChange?: (filters: any) => void;
+  onFilterChange?: (filters: BookingFilters) => void;
+}
+
+export interface BookingFilters {
+  dateRange: { start: string; end: string };
+  slot: string;
+  search: string;
 }
 
 const BookingFilters: React.FC<BookingFiltersProps> = ({ onFilterChange }) => {
@@ -14,12 +22,43 @@ const BookingFilters: React.FC<BookingFiltersProps> = ({ onFilterChange }) => {
     slot: '',
     search: ''
   });
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
   const handleFilterChange = (key: string, value: string | { start: string; end: string }) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
+    console.log('Filter changed:', key, value);
     onFilterChange?.(newFilters);
   };
+
+  const fetchSlots = async () => {
+    try {
+      setIsLoadingSlots(true);
+      // Sort by most recent slots first
+      const slotsData = await getSlots();
+      // Only show slots that are in the future
+      const currentDate = new Date();
+      const futureSlots = slotsData.filter(slot => {
+        const slotDate = new Date(slot.date);
+        return slotDate >= currentDate;
+      });
+      setSlots(futureSlots);
+      console.log('Fetched slots for filter:', futureSlots.length);
+    } catch (error) {
+      console.error('Error fetching slots for filter:', error);
+    } finally {
+      setIsLoadingSlots(false);
+    }
+  };
+
+  // Fetch available slots for the filter
+  useEffect(() => {
+    
+    fetchSlots();
+  }, []);
+  
+
 
   return (
     <div className="card mb-6">
@@ -68,11 +107,18 @@ const BookingFilters: React.FC<BookingFiltersProps> = ({ onFilterChange }) => {
             className="input"
             value={filters.slot}
             onChange={(e) => handleFilterChange('slot', e.target.value)}
+            disabled={isLoadingSlots}
           >
             <option value="">All Slots</option>
-            <option value="morning">Morning (9 AM - 12 PM)</option>
-            <option value="afternoon">Afternoon (2 PM - 5 PM)</option>
-            <option value="evening">Evening (6 PM - 9 PM)</option>
+            {isLoadingSlots ? (
+              <option value="" disabled>Loading slots...</option>
+            ) : (
+              slots.map((slot) => (
+                <option key={slot._id} value={slot._id}>
+                  {new Date(slot.date).toLocaleDateString()} - {slot.startHour}:00 to {slot.endHour}:00 - {slot.location}
+                </option>
+              ))
+            )}
           </select>
 
           {/* Clear Filters Button */}

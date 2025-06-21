@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/layout/AuthLayout';
-import { authApi } from '@/utils/api/auth';
+import { patientAuthApi, setPatientAuthToken } from '@/utils/api/users/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function PatientLoginPage() {
@@ -29,25 +29,31 @@ export default function PatientLoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    // try {
-    //   // TODO: Replace with patient login API endpoint
-    //   const data = await authApi.patientLogin(formData.email, formData.password);
+    try {
+      const data = await patientAuthApi.login(formData.email, formData.password);
       
-    //   if (data.token) {
-    //     // Store the token in localStorage or context/state management
-    //     localStorage.setItem('patientToken', data.token);
-    //     login(data.token, data.user);
-    //     // Redirect to patient dashboard
-    //     router.push('/patient/dashboard');
-    //   } else {
-    //     setError(data.message || 'Login failed');
-    //   }
-    // } catch (err) {
-    //   setError('An error occurred during login');
-    //   console.error('Login error:', err);
-    // } finally {
-    //   setLoading(false);
-    // }
+      if (data.token) {
+        // Store the token in localStorage
+        setPatientAuthToken(data.token);
+        // Convert patient data to the format expected by the auth context
+        const userData = {
+          id: data.data?._id || '',
+          name: data.data?.name || '',
+          email: data.data?.email || '',
+          role: 'patient'
+        };
+        login(data.token, userData);
+        // Redirect to patient dashboard
+        router.push('/patient/dashboard');
+      } else {
+        setError(data.message || 'Login failed');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred during login');
+      console.error('Login error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

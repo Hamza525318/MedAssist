@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const User = require("../models/User");
 
+
 dotenv.config();
 
 async function verifyJwt(req, res, next) {
@@ -38,4 +39,7 @@ async function verifyJwt(req, res, next) {
   }
 }
 
+
+
 module.exports = verifyJwt;
+

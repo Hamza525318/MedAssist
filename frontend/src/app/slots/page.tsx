@@ -5,18 +5,27 @@ import { Plus } from 'lucide-react';
 import { Slot, SlotFilters } from '@/types/slot';
 import { getSlots, createSlot, updateSlot, deleteSlot } from '@/utils/api/slot';
 import CreateSlotModal from '@/components/slots/CreateSlotModal';
+import ConfirmationModal from '@/components/slots/ConfirmationModal';
 import SlotFilterBar from '@/components/slots/SlotFilterBar';
 import SlotTable from '@/components/slots/SlotTable';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
-// Available locations - this could be fetched from an API
-const LOCATIONS = ['Main Clinic', 'Branch 1', 'Branch 2'];
+// Slot type definition for type safety
+type SlotFormData = {
+  date: string;
+  startHour: number;
+  endHour: number;
+  capacity: number;
+  location: string;
+};
 
 export default function SlotsPage() {
   const [slots, setSlots] = useState<Slot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [slotToDelete, setSlotToDelete] = useState<Slot | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [filters, setFilters] = useState<SlotFilters>({});
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -48,10 +57,10 @@ export default function SlotsPage() {
 
   useEffect(() => {
     fetchSlots();
-  }, [filters]);
+  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle slot creation
-  const handleCreateSlot = async (data: any) => {
+  const handleCreateSlot = async (data: SlotFormData) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -68,19 +77,24 @@ export default function SlotsPage() {
   };
 
   // Handle slot update
-  const handleUpdateSlot = async (slot: Slot) => {
+  const handleUpdateSlot = async (data: SlotFormData) => {
+    if (!selectedSlot) return;
+    
     try {
       setIsLoading(true);
       setError(null);
-      await updateSlot(slot._id, {
-        date: slot.date,
-        startHour: slot.startHour,
-        endHour: slot.endHour,
-        capacity: slot.capacity,
-        location: slot.location
+      console.log('Updating slot:', selectedSlot._id, data);
+      await updateSlot(selectedSlot._id, {
+        date: data.date,
+        startHour: data.startHour,
+        endHour: data.endHour,
+        capacity: data.capacity,
+        location: data.location
       });
       setSuccessMessage('Slot updated successfully');
       fetchSlots();
+      setIsModalOpen(false);
+      setSelectedSlot(null);
     } catch (error) {
       console.error('Error updating slot:', error);
       setError('Failed to update slot');
@@ -89,16 +103,25 @@ export default function SlotsPage() {
     }
   };
 
+  // Open delete confirmation modal
+  const openDeleteModal = (slot: Slot) => {
+    console.log("OPEN DELETE MODAL",slot);
+    setSlotToDelete(slot);
+    setIsDeleteModalOpen(true);
+  };
+
   // Handle slot deletion
-  const handleDeleteSlot = async (slot: Slot) => {
-    if (!confirm('Are you sure you want to delete this slot?')) return;
+  const handleDeleteSlot = async () => {
+    if (!slotToDelete) return;
 
     try {
       setIsLoading(true);
       setError(null);
-      await deleteSlot(slot._id);
+      await deleteSlot(slotToDelete._id);
       setSuccessMessage('Slot deleted successfully');
       fetchSlots();
+      setIsDeleteModalOpen(false);
+      setSlotToDelete(null);
     } catch (error) {
       console.error('Error deleting slot:', error);
       setError('Failed to delete slot');
@@ -151,7 +174,7 @@ export default function SlotsPage() {
           </div>
 
           {/* Filters */}
-          <SlotFilterBar onFilterChange={setFilters} locations={LOCATIONS} />
+          <SlotFilterBar onFilterChange={setFilters} />
 
           {/* Loading state */}
           {isLoading ? (
@@ -162,8 +185,11 @@ export default function SlotsPage() {
           ) : (
             <SlotTable
               slots={slots}
-              onEdit={setSelectedSlot}
-              onDelete={handleDeleteSlot}
+              onEdit={(slot) => {
+                setSelectedSlot(slot);
+                setIsModalOpen(true);
+              }}
+              onDelete={openDeleteModal}
             />
           )}
 
@@ -174,7 +200,22 @@ export default function SlotsPage() {
               setIsModalOpen(false);
               setSelectedSlot(null);
             }}
-            onSubmit={handleCreateSlot}
+            onSubmit={selectedSlot ? handleUpdateSlot : handleCreateSlot}
+            slot={selectedSlot}
+          />
+
+          {/* Delete Confirmation Modal */}
+          <ConfirmationModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => {
+              setIsDeleteModalOpen(false);
+              setSlotToDelete(null);
+            }}
+            onConfirm={handleDeleteSlot}
+            title="Delete Slot"
+            message="Are you sure you want to delete this slot? This action cannot be undone."
+            confirmText="Delete"
+            isLoading={isLoading}
           />
         </div>
       </div>

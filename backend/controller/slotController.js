@@ -77,7 +77,7 @@ const getSlots = async (req, res) => {
     }
 
     const slots = await Slot.find(query)
-      .sort({ date: 1, hour: 1 })
+      .sort({ date: -1, startHour: 1 })
       .populate('doctorId', 'name email');
 
     return res.status(200).json({
@@ -97,6 +97,7 @@ const getSlots = async (req, res) => {
 const updateSlot = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('UPDATE SLOT DETAILS',id);
     const {date, startHour, endHour, capacity, location } = req.body;
 
     // Find slot and verify ownership
@@ -111,6 +112,9 @@ const updateSlot = async (req, res) => {
     // Update allowed fields
     if (capacity !== undefined) slot.capacity = capacity;
     if (location) slot.location = location;
+    if (date) slot.date = date;
+    if (startHour) slot.startHour = startHour;
+    if (endHour) slot.endHour = endHour;
 
     await slot.save();
 
@@ -131,6 +135,7 @@ const updateSlot = async (req, res) => {
 const deleteSlot = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log("DELETE SLOT API",req.params);
 
     // Find slot and verify ownership
     const slot = await Slot.findOne({ _id: id, doctorId: req.user.id });

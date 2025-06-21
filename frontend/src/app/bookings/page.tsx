@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import BookingFilters from '@/components/bookings/BookingFilters';
+import BookingFilters, { BookingFilters as BookingFiltersType } from '@/components/bookings/BookingFilters';
 import BookingTable from '@/components/bookings/BookingTable';
 import BookingDetailsModal from '@/components/bookings/BookingDetailsModal';
 import CreateBookingModal from '@/components/bookings/CreateBookingModal';
@@ -21,6 +21,11 @@ export default function BookingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState('Pending');
   const [isLoading, setIsLoading] = useState(false);
+  const [filters, setFilters] = useState<BookingFiltersType>({
+    dateRange: { start: '', end: '' },
+    slot: '',
+    search: ''
+  });
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
@@ -28,17 +33,35 @@ export default function BookingsPage() {
     pages: 0
   });
 
+  console.log("BOOKINGS PAGE RENDERED");
   const fetchBookings = async (page = 1) => {
     try {
       setIsLoading(true);
+      console.log('Fetching bookings with filters:', {
+        status: activeStatus,
+        page,
+        limit: pagination.limit,
+        slotId: filters.slot,
+        search: filters.search,
+        startDate: filters.dateRange.start || undefined,
+        endDate: filters.dateRange.end || undefined
+      });
+      
       const response = await getBookings({
         status: activeStatus,
         page,
-        limit: pagination.limit
+        limit: pagination.limit,
+        slotId: filters.slot || undefined,
+        search: filters.search || undefined,
+        startDate: filters.dateRange.start || undefined,
+        endDate: filters.dateRange.end || undefined
       });
+      
+      console.log('Bookings response:', response);
       setBookings(response.data);
       setPagination(response.pagination);
     } catch (error) {
+      console.error('Error fetching bookings:', error);
       setError('Failed to fetch bookings');
     } finally {
       setIsLoading(false);
@@ -47,7 +70,7 @@ export default function BookingsPage() {
 
   useEffect(() => {
     fetchBookings();
-  }, [activeStatus]);
+  }, [activeStatus, filters.slot, filters.search, filters.dateRange.start, filters.dateRange.end]);
 
   const handleBookingSelect = (booking: BookingData) => {
     setSelectedBooking(booking);
@@ -152,7 +175,12 @@ export default function BookingsPage() {
           </button>
         </div>
 
-        <BookingFilters />
+        <BookingFilters 
+          onFilterChange={(newFilters) => {
+            console.log('Filters updated:', newFilters);
+            setFilters(newFilters);
+          }}
+        />
 
         <div className="mb-6">
           <StatusTabs 

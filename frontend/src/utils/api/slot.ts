@@ -63,7 +63,7 @@ export const updateSlot = async (id: string, data: UpdateSlotData): Promise<Slot
       throw new Error('Authentication required');
     }
 
-    const response = await axios.put(`${API_BASE_URL}/slots/${id}`, {
+    const response = await axios.put(`${API_BASE_URL}/slots/update-slot/${id}`, {
       date: data.date,
       startHour: data.startHour,
       endHour: data.endHour,

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/layout/AuthLayout';
-import { authApi } from '@/utils/api/auth';
+import { patientAuthApi } from '@/utils/api/users/auth';
 
 export default function PatientRegisterPage() {
   const router = useRouter();
@@ -39,22 +39,39 @@ export default function PatientRegisterPage() {
     }
 
     setLoading(true);
-    // try {
-    //   // TODO: Replace with patient registration API endpoint
-    //   const data = await authApi.registerPatient(formData);
+    try {
+      // Calculate age from date of birth
+      const birthDate = new Date(formData.dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      // Register patient
+      const data = await patientAuthApi.register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        dob: formData.dob,
+        gender: formData.gender,
+        contactNumber: formData.contactNumber,
+        age: age
+      });
       
-    //   if (data.success) {
-    //     // Redirect to login page with success message
-    //     router.push('/auth/patients/login?registered=true');
-    //   } else {
-    //     setError(data.message || 'Registration failed');
-    //   }
-    // } catch (err) {
-    //   setError('An error occurred during registration');
-    //   console.error('Registration error:', err);
-    // } finally {
-    //   setLoading(false);
-    // }
+      if (data.success) {
+        // Redirect to login page with success message
+        router.push('/auth/patients/login?registered=true');
+      } else {
+        setError(data.message || 'Registration failed');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred during registration');
+      console.error('Registration error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

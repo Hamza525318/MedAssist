@@ -34,7 +34,7 @@ const CreateBookingModal: React.FC<CreateBookingModalProps> = ({
     reason: '',
     contactNumber: '',
     age: undefined,
-    gender: ''
+    gender: '',
   });
 
   const [isNewPatient, setIsNewPatient] = useState(true);
@@ -124,6 +124,7 @@ const CreateBookingModal: React.FC<CreateBookingModalProps> = ({
           }
         } : {
           patientId: formData._id,
+          status: formData.status
         })
       };
 
@@ -267,7 +268,7 @@ const CreateBookingModal: React.FC<CreateBookingModalProps> = ({
                     onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                   />
                 </div>
-                <div>
+              <div>
                   <label className="block text-sm font-medium text-gray-700">Available Slots</label>
                   <select
                     required
@@ -283,8 +284,17 @@ const CreateBookingModal: React.FC<CreateBookingModalProps> = ({
                       </option>
                     ))}
                   </select>
-                </div>
               </div>
+            </div>
+
+            <div className='grid grid-cols-1'>
+              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <select value={formData.status} onChange={(e)=> setFormData({...formData,status: e.target.value})}>
+                <option value="Pending">Pending</option>
+                <option value="Accepted">Accepted</option>
+                <option value="CheckedIn">CheckedIn</option>
+              </select>
+            </div>
 
               {/* Reason */}
               <div>
