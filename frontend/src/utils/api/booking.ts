@@ -116,6 +116,15 @@ export const createBooking = async (bookingData: CreateBookingRequest): Promise<
     throw new Error('Failed to create booking');
   }
 };
+export interface UpdateBookingRequest {
+  status?: string;
+  reason?: string;
+  slotId?: string;
+  patientId?: string;
+  requestedAt?: Date;
+  updatedAt?: Date;
+}
+
 
 export const updateBooking = async (bookingId: string, data: UpdateBookingRequest): Promise<BookingResponse> => {
   try {
@@ -141,5 +150,43 @@ export const updateBooking = async (bookingId: string, data: UpdateBookingReques
       throw new Error(error.response?.data?.message || 'Failed to update booking');
     }
     throw new Error('Failed to update booking');
+  }
+};
+
+export interface RescheduleBookingsBySlotRequest {
+  oldSlotId: string;
+  newSlotId: string;
+}
+
+export interface RescheduleBookingsBySlotResponse {
+  success: boolean;
+  message: string;
+  data: BookingData[];
+}
+
+export const rescheduleBookingsBySlot = async (data: RescheduleBookingsBySlotRequest): Promise<RescheduleBookingsBySlotResponse> => {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await axios.post(
+      `${API_BASE_URL}/bookings/reschedule-slot`,
+      data,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Failed to reschedule bookings');
+    }
+    throw new Error('Failed to reschedule bookings');
   }
 };

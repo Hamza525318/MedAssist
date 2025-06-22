@@ -170,19 +170,12 @@ const getBookings = async (req, res) => {
   }
 };
 
-// Update booking status
+// Update booking
 const updateBooking = async (req, res) => {
   try {
+    console.log("Update Booking request",req.body,req.params);
     const { id } = req.params;
-    const { status } = req.body;
-
-    // Validate status
-    if (!['Pending', 'Accepted', 'Rejected', 'CheckedIn', 'Completed'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid status'
-      });
-    }
+    const { status, reason, slotId, patientId, requestedAt } = req.body;
 
     // Find booking
     const booking = await BookingRequest.findById(id);
@@ -193,29 +186,111 @@ const updateBooking = async (req, res) => {
       });
     }
 
-    // Get slot
-    const slot = await Slot.findById(booking.slotId);
-    if (!slot) {
+    // Get current slot
+    const currentSlot = await Slot.findById(booking.slotId);
+    if (!currentSlot) {
       return res.status(404).json({
         success: false,
         message: 'Associated slot not found'
       });
     }
 
-    // Handle status changes
-    const oldStatus = booking.status;
-    await booking.updateStatus(status);
+    // Handle status changes if status is provided
+    if (status) {
+      // Validate status
+      if (!['Pending', 'Accepted', 'Rejected', 'CheckedIn', 'Completed'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid status'
+        });
+      }
 
-    // Update slot's booked count based on status change
-    if (oldStatus === 'Accepted' && status === 'Rejected') {
-      await slot.decrementBookedCount();
-    } else if (oldStatus === 'Pending' && status === 'Accepted') {
-      await slot.incrementBookedCount();
+      const oldStatus = booking.status;
+      
+      // Update status using the model method
+      await booking.updateStatus(status);
+      
+      // Update slot's booked count based on status change
+      if (oldStatus === 'Accepted' && status === 'Rejected') {
+        await currentSlot.decrementBookedCount();
+      } else if (oldStatus === 'Pending' && status === 'Accepted') {
+        await currentSlot.incrementBookedCount();
+      }
     }
+
+    // Handle slot change if new slotId is provided
+    if (slotId && slotId !== booking.slotId.toString()) {
+      // Check if new slot exists and has capacity
+      const newSlot = await Slot.findById(slotId);
+      if (!newSlot) {
+        return res.status(404).json({
+          success: false,
+          message: 'New slot not found'
+        });
+      }
+
+      if (!newSlot.canAcceptBooking()) {
+        return res.status(400).json({
+          success: false,
+          message: 'New slot is already full'
+        });
+      }
+
+      // Check if patient already has a booking for this slot
+      const existingBooking = await BookingRequest.findOne({
+        slotId,
+        patientId: booking.patientId,
+        _id: { $ne: id }, // Exclude current booking
+        status: { $in: ['Pending', 'Accepted'] }
+      });
+
+      if (existingBooking) {
+        return res.status(409).json({
+          success: false,
+          message: 'Patient already has a booking for this slot'
+        });
+      }
+
+      // Update slot counts
+      if (booking.status === 'Accepted') {
+        await currentSlot.decrementBookedCount();
+        await newSlot.incrementBookedCount();
+      }
+
+      // Update booking's slotId
+      booking.slotId = slotId;
+    }
+
+    // Update patient if patientId is provided
+    if (patientId && patientId !== booking.patientId.toString()) {
+      const patient = await Patient.findById(patientId);
+      if (!patient) {
+        return res.status(404).json({
+          success: false,
+          message: 'Patient not found'
+        });
+      }
+      booking.patientId = patientId;
+    }
+
+    // Update other fields if provided
+    if (reason !== undefined) booking.reason = reason;
+    if (requestedAt) booking.requestedAt = new Date(requestedAt);
+    
+    // Always update the updatedAt timestamp
+    booking.updatedAt = new Date();
+
+    // Save the updated booking
+    await booking.save();
+
+    // Populate the booking with patient and slot details for response
+    const populatedBooking = await BookingRequest.findById(booking._id)
+      .populate('slotId', 'date startHour endHour location capacity bookedCount')
+      .populate('patientId', 'name patientId contactNumber age gender dob');
 
     return res.status(200).json({
       success: true,
-      data: booking
+      data: populatedBooking
     });
   } catch (error) {
     console.error('Update booking error:', error);
@@ -270,9 +345,198 @@ const deleteBooking = async (req, res) => {
   }
 };
 
+// Reschedule all bookings from one slot to another
+const rescheduleBookingsBySlot = async (req, res) => {
+  try {
+    const { oldSlotId, newSlotId } = req.body;
+
+    if (!oldSlotId || !newSlotId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both oldSlotId and newSlotId are required'
+      });
+    }
+
+    // Verify both slots exist
+    const oldSlot = await Slot.findById(oldSlotId);
+    if (!oldSlot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Source slot not found'
+      });
+    }
+
+    const newSlot = await Slot.findById(newSlotId);
+    if (!newSlot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Destination slot not found'
+      });
+    }
+
+    // Find all bookings for the old slot with status Pending, Accepted, or CheckedIn
+    const bookingsToReschedule = await BookingRequest.find({
+      slotId: oldSlotId,
+      status: { $in: ['Pending', 'Accepted', 'CheckedIn'] }
+    }).populate('patientId');
+
+    if (bookingsToReschedule.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No eligible bookings found for rescheduling'
+      });
+    }
+
+    // Check if new slot has enough capacity
+    const totalAcceptedBookings = bookingsToReschedule.filter(booking => 
+      booking.status === 'Accepted' || booking.status === 'CheckedIn'
+    ).length;
+
+    if (newSlot.bookedCount + totalAcceptedBookings > newSlot.capacity) {
+      return res.status(400).json({
+        success: false,
+        message: 'Destination slot does not have enough capacity for all accepted bookings'
+      });
+    }
+
+    // Update all bookings
+    const updatedBookings = [];
+    for (const booking of bookingsToReschedule) {
+      // Update slot counts if the booking was accepted
+      if (booking.status === 'Accepted' || booking.status === 'CheckedIn') {
+        await oldSlot.decrementBookedCount();
+        await newSlot.incrementBookedCount();
+      }
+
+      // Update booking's slotId
+      booking.slotId = newSlotId;
+      booking.updatedAt = new Date();
+      await booking.save();
+
+      // Add to updated bookings
+      updatedBookings.push(booking);
+    }
+
+    // Return the updated bookings
+    return res.status(200).json({
+      success: true,
+      message: `Successfully rescheduled ${updatedBookings.length} bookings`,
+      data: updatedBookings
+    });
+  } catch (error) {
+    console.error('Reschedule bookings by slot error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+// Reschedule a single booking to a new slot
+const rescheduleSingleBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newSlotId } = req.body;
+
+    if (!newSlotId) {
+      return res.status(400).json({
+        success: false,
+        message: 'newSlotId is required'
+      });
+    }
+
+    // Find booking
+    const booking = await BookingRequest.findById(id);
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+
+    // Check if booking is eligible for rescheduling
+    if (!['Pending', 'Accepted', 'CheckedIn'].includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only Pending, Accepted, or CheckedIn bookings can be rescheduled'
+      });
+    }
+
+    // Get current slot
+    const currentSlot = await Slot.findById(booking.slotId);
+    if (!currentSlot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Current slot not found'
+      });
+    }
+
+    // Check if new slot exists and has capacity
+    const newSlot = await Slot.findById(newSlotId);
+    if (!newSlot) {
+      return res.status(404).json({
+        success: false,
+        message: 'New slot not found'
+      });
+    }
+
+    if (!newSlot.canAcceptBooking() && (booking.status === 'Accepted' || booking.status === 'CheckedIn')) {
+      return res.status(400).json({
+        success: false,
+        message: 'New slot is already full'
+      });
+    }
+
+    // Check if patient already has a booking for this slot
+    const existingBooking = await BookingRequest.findOne({
+      slotId: newSlotId,
+      patientId: booking.patientId,
+      _id: { $ne: id }, // Exclude current booking
+      status: { $in: ['Pending', 'Accepted', 'CheckedIn'] }
+    });
+
+    if (existingBooking) {
+      return res.status(409).json({
+        success: false,
+        message: 'Patient already has a booking for this slot'
+      });
+    }
+
+    // Update slot counts if the booking was accepted
+    if (booking.status === 'Accepted' || booking.status === 'CheckedIn') {
+      await currentSlot.decrementBookedCount();
+      await newSlot.incrementBookedCount();
+    }
+
+    // Update booking's slotId
+    booking.slotId = newSlotId;
+    booking.updatedAt = new Date();
+    await booking.save();
+
+    // Populate the booking with patient and slot details for response
+    const populatedBooking = await BookingRequest.findById(booking._id)
+      .populate('slotId', 'date startHour endHour location capacity bookedCount')
+      .populate('patientId', 'name patientId contactNumber age gender dob');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Booking successfully rescheduled',
+      data: populatedBooking
+    });
+  } catch (error) {
+    console.error('Reschedule single booking error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
 module.exports = {
   createBooking,
   getBookings,
   updateBooking,
-  deleteBooking
+  deleteBooking,
+  rescheduleBookingsBySlot,
+  rescheduleSingleBooking
 }; 

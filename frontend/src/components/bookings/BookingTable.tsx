@@ -9,6 +9,7 @@ interface BookingTableProps {
   onViewDetails: (booking: BookingResponse) => void;
   onEdit: (booking: BookingResponse) => void;
   onDelete: (booking: BookingResponse) => void;
+  handleBookingRequestStatusChange: (booking: BookingResponse, status: string) => void;
   activeStatus: string;
   isLoading?: boolean;
   pagination?: {
@@ -28,7 +29,8 @@ const BookingTable: React.FC<BookingTableProps> = ({
   activeStatus,
   isLoading = false,
   pagination,
-  onPageChange
+  onPageChange,
+  handleBookingRequestStatusChange
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -129,29 +131,91 @@ const BookingTable: React.FC<BookingTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex justify-end space-x-2">
-                    <button
-                      onClick={() => onViewDetails(booking)}
-                      className="text-indigo-600 hover:text-indigo-900"
-                      title="View Details"
-                    >
-                      <Eye size={18} />
-                    </button>
-                    {booking.status === 'Pending' && (
+                     {booking.status === 'Pending' && (
+                      <>
+                        <button
+                          onClick={() => onEdit(booking)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleBookingRequestStatusChange(booking, 'Accepted')}
+                          className="text-green-600 hover:text-green-900"
+                          title="Accept"
+                        >
+                          <Check size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleBookingRequestStatusChange(booking, 'Rejected')}
+                          className="text-red-600 hover:text-red-900"
+                          title="Reject"
+                        >
+                          <X size={18} />
+                        </button>
+                      </>
+                    )}
+                    
+                    {booking.status === 'Accepted' && (
+                      <>
+                        <button
+                          onClick={() => onEdit(booking)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleBookingRequestStatusChange(booking, 'CheckedIn')}
+                          className="text-green-600 hover:text-green-900"
+                          title="Check In"
+                        >
+                          <UserCheck size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleBookingRequestStatusChange(booking, 'Rejected')}
+                          className="text-red-600 hover:text-red-900"
+                          title="Cancel"
+                        >
+                          <X size={18} />
+                        </button>
+                      </>
+                    )}
+                    
+                    {booking.status === 'CheckedIn' && (
+                      <>
+                        <button
+                          onClick={() => onEdit(booking)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleBookingRequestStatusChange(booking, 'Completed')}
+                          className="text-green-600 hover:text-green-900"
+                          title="Complete"
+                        >
+                          <CheckCircle size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleBookingRequestStatusChange(booking, 'Rejected')}
+                          className="text-red-600 hover:text-red-900"
+                          title="Cancel"
+                        >
+                          <X size={18} />
+                        </button>
+                      </>
+                    )}
+                    
+                    {(booking.status === 'Completed' || booking.status === 'Rejected') && (
                       <button
                         onClick={() => onEdit(booking)}
                         className="text-blue-600 hover:text-blue-900"
                         title="Edit"
                       >
                         <Edit size={18} />
-                      </button>
-                    )}
-                    {(booking.status === 'Pending' || booking.status === 'Accepted') && (
-                      <button
-                        onClick={() => onDelete(booking)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Delete"
-                      >
-                        <X size={18} />
                       </button>
                     )}
                   </div>

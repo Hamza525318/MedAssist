@@ -9,6 +9,7 @@ const chatHistoryRoute = require("./routes/chatHistoryRoute");
 const slotRoutes = require("./routes/slotRoutes");
 const prescriptionRoutes = require("./routes/prescriptionRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 const app = express();
 dotenv.config();
@@ -34,6 +35,7 @@ app.use("/api/chat-history",chatHistoryRoute); // Chat history routes
 app.use("/api/slots",slotRoutes);
 app.use("/api/prescription",prescriptionRoutes);
 app.use("/api/bookings",bookingRoutes);
+app.use("/api/dashboard",dashboardRoutes);
 
 app.listen(process.env.PORT || 5000, () => {
   console.log(`Server is running on port ${process.env.PORT || 5000}`);

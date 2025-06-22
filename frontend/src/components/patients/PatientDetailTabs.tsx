@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { MedicationData, createPrescription, getPrescriptionsByPatientId, Prescription, deletePrescription, updatePrescription } from '@/utils/api/prescription';
 import SignatureCanvas from 'react-signature-canvas';
 import type { SignatureCanvas as SignatureCanvasType } from 'react-signature-canvas';
+import AddHistoryModal from './AddHistoryModal';
 
 interface PatientHistoryItem {
   _id?: string;
@@ -684,6 +685,29 @@ const PatientDetailTabs: React.FC<PatientDetailsTabsProps> = ({ patient, onRefre
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const {user} = useAuth();
+  const [isAddHistoryModalOpen, setIsAddHistoryModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  const handleAddHistorySuccess = async () => {
+    try {
+      setSuccessMessage('Medical history added successfully');
+      if (onRefresh) {
+        await onRefresh();
+      }
+    } catch (error) {
+      console.error('Error refreshing patient data:', error);
+      setError('Failed to refresh patient data');
+    }
+  };
 
   const fetchReports = useCallback(async () => {
     if (!patient?.patientId) return;
@@ -1285,6 +1309,12 @@ const PatientDetailTabs: React.FC<PatientDetailsTabsProps> = ({ patient, onRefre
         onDelete={handleDeletePrescription}
         prescriptionId={selectedPrescription?.prescriptionId || ''}
         isLoading={isLoading}
+      />
+       <AddHistoryModal
+        isOpen={isAddHistoryModalOpen}
+        onClose={() => setIsAddHistoryModalOpen(false)}
+        patient={patient}
+        onSuccess={handleAddHistorySuccess}
       />
     </div>
   );

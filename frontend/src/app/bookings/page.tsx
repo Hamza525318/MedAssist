@@ -1,15 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { ChevronsUp, Plus,Calendar } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import BookingFilters, { BookingFilters as BookingFiltersType } from '@/components/bookings/BookingFilters';
 import BookingTable from '@/components/bookings/BookingTable';
 import BookingDetailsModal from '@/components/bookings/BookingDetailsModal';
 import CreateBookingModal from '@/components/bookings/CreateBookingModal';
 import StatusTabs from '@/components/bookings/StatusTabs';
-import { BookingData } from '@/types';
-import { getBookings, deleteBooking } from '@/utils/api/booking';
+import { BookingData, BookingResponse } from '@/types';
+import { getBookings, deleteBooking,updateBooking } from '@/utils/api/booking';
+import ConfirmationModal from '@/components/bookings/ConfirmationModal';
+import EditBookingModal from '@/components/bookings/EditBookingModal';
+import BulkRescheduleModal from '@/components/bookings/BulkRescheduleModal';
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<BookingData[]>([]);
@@ -18,6 +21,7 @@ export default function BookingsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isBulkRescheduleModalOpen, setIsBulkRescheduleModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState('Pending');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +35,15 @@ export default function BookingsPage() {
     page: 1,
     limit: 10,
     pages: 0
+  });
+  const [statusChangeConfirmation, setStatusChangeConfirmation] = useState<{
+    isOpen: boolean;
+    booking: BookingData | null;
+    newStatus: string;
+  }>({
+    isOpen: false,
+    booking: null,
+    newStatus: ''
   });
 
   console.log("BOOKINGS PAGE RENDERED");
@@ -77,6 +90,24 @@ export default function BookingsPage() {
     setIsDetailsModalOpen(true);
   };
 
+  const handleViewDetails = (booking: BookingData) => {
+    setSelectedBooking(booking);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleBookingUpdated = async () => {
+    try {
+      setIsLoading(true);
+      await fetchBookings(pagination.page);
+      setSuccessMessage("Booking updated successfully");
+    } catch (error) {
+      console.error('Error updating booking:', error);
+      setError('Failed to update booking');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleEditBooking = (booking: BookingData) => {
     setSelectedBooking(booking);
     setIsEditModalOpen(true);
@@ -112,16 +143,98 @@ export default function BookingsPage() {
 
   const handleDeleteBooking = async (booking: BookingData) => {
     try {
+      if(!booking._id){
+        return;
+      }
       await deleteBooking(booking._id);
       setSuccessMessage('Booking deleted successfully');
       fetchBookings();
     } catch (error) {
-      setError('Failed to delete booking');
+      setError('Failed to delete booking',error?.message);
     }
   };
 
   const handleStatusChange = (status: string) => {
     setActiveStatus(status);
+  };
+
+  const handleBookingRequestStatusChange = (booking: BookingResponse, status: string)=>{
+      // Open confirmation modal with booking and new status
+    setStatusChangeConfirmation({
+      isOpen: true,
+      booking,
+      newStatus: status
+    });
+  }
+
+  const handleConfirmStatusChange = async () => {
+    if (!statusChangeConfirmation.booking || !statusChangeConfirmation.newStatus) return;
+    
+    setIsLoading(true);
+    try {
+
+      const { booking, newStatus } = statusChangeConfirmation;
+      console.log("Booking Status Change",booking,newStatus);
+      if(booking._id){
+        await updateBooking(booking._id, { status: newStatus });
+      }
+      setSuccessMessage(`Booking status updated to ${newStatus} successfully`);
+      fetchBookings(pagination.page);
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      setError('Failed to update booking status');
+    } finally {
+      setIsLoading(false);
+      // Close confirmation modal
+      setStatusChangeConfirmation({
+        isOpen: false,
+        booking: null,
+        newStatus: ''
+      });
+    }
+  };
+
+  const handleCancelStatusChange = () => {
+    // Close confirmation modal without taking action
+    setStatusChangeConfirmation({
+      isOpen: false,
+      booking: null,
+      newStatus: ''
+    });
+  };
+
+  const getConfirmationModalType = (status: string) => {
+    switch (status) {
+      case 'Accepted':
+      case 'Completed':
+      case 'CheckedIn':
+        return 'success';
+      case 'Rejected':
+        return 'danger';
+      default:
+        return 'warning';
+    }
+  };
+
+  const getStatusChangeMessage = (currentStatus: string, newStatus: string) => {
+    return `Are you sure you want to change the booking status from "${currentStatus}" to "${newStatus}"?`;
+  };
+
+  const handleBulkReschedule = () => {
+    setIsBulkRescheduleModalOpen(true);
+  };
+
+  const handleBulkRescheduleComplete = async () => {
+    try {
+      setIsLoading(true);
+      await fetchBookings(pagination.page);
+      setSuccessMessage("Bookings rescheduled successfully");
+    } catch (error) {
+      console.error('Error after rescheduling bookings:', error);
+      setError('Failed to refresh bookings after rescheduling');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Show success message for 3 seconds
@@ -133,6 +246,7 @@ export default function BookingsPage() {
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
 
   return (
     <DashboardLayout>
@@ -166,13 +280,22 @@ export default function BookingsPage() {
             <h1 className="text-2xl font-semibold text-gray-800">Booking Management</h1>
             <p className="text-gray-600">Manage patient booking requests for your available slots</p>
           </div>
-          <button 
-            className="btn btn-primary mt-4 sm:mt-0"
-            onClick={handleCreateBooking}
-          >
-            <Plus size={18} className="mr-2" />
-            Create Booking Request
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
+            <button 
+              className="btn btn-secondary"
+              onClick={handleBulkReschedule}
+            >
+              <Calendar size={18} className="mr-2" />
+              Reschedule Bulk Booking
+            </button>
+            <button 
+              className="btn btn-primary"
+              onClick={handleCreateBooking}
+            >
+              <Plus size={18} className="mr-2" />
+              Create Booking Request
+            </button>
+          </div>
         </div>
 
         <BookingFilters 
@@ -198,6 +321,7 @@ export default function BookingsPage() {
           isLoading={isLoading}
           pagination={pagination}
           onPageChange={fetchBookings}
+          handleBookingRequestStatusChange={handleBookingRequestStatusChange}
         />
 
         {selectedBooking && (
@@ -226,6 +350,35 @@ export default function BookingsPage() {
           onSubmit={handleEditSubmit}
           booking={selectedBooking || undefined}
           isEditing={true}
+        />
+
+        {statusChangeConfirmation.isOpen && statusChangeConfirmation.booking && (
+          <ConfirmationModal
+            isOpen={statusChangeConfirmation.isOpen}
+            onClose={handleCancelStatusChange}
+            onConfirm={handleConfirmStatusChange}
+            title={`Change Booking Status`}
+            message={getStatusChangeMessage(statusChangeConfirmation.booking.status, statusChangeConfirmation.newStatus)}
+            confirmText={`Yes, Change Status`}
+            cancelText="Cancel"
+            type={getConfirmationModalType(statusChangeConfirmation.newStatus)}
+          />
+        )}
+         
+         
+        {selectedBooking && (
+          <EditBookingModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onBookingUpdated={handleBookingUpdated}
+            booking={selectedBooking}
+          />
+        )}
+
+        <BulkRescheduleModal
+          isOpen={isBulkRescheduleModalOpen}
+          onClose={() => setIsBulkRescheduleModalOpen(false)}
+          onRescheduleComplete={handleBulkRescheduleComplete}
         />
       </div>
     </DashboardLayout>
