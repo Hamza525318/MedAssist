@@ -142,6 +142,17 @@ export default function PatientsPage() {
     fetchPatients(searchQuery, newPage, pagination.limit);
   };
 
+  // Format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
   // Initial fetch - only run once when component mounts
   useEffect(() => {
     fetchPatients('', pagination.page, pagination.limit);
@@ -323,8 +334,8 @@ export default function PatientsPage() {
               <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search patients..."
-                className="input pl-10"
+                placeholder="Search by name, contact and ID"
+                className="input pl-10 placeholder:ml-4"
                 value={searchQuery}
                 onChange={handleSearchChange}
               />
@@ -361,9 +372,20 @@ export default function PatientsPage() {
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-medium text-gray-800">{patient.name}</h3>
+                      <h3 className="font-medium text-gray-800 flex items-center">
+                        {patient.name}
+                        {patient.gender && (
+                          <span className="ml-2 text-gray-500">
+                            {patient.gender.toLowerCase() === 'male' ? (
+                              <Male size={16} className="text-blue-500" />
+                            ) : patient.gender.toLowerCase() === 'female' ? (
+                              <Female size={16} className="text-pink-500" />
+                            ) : null}
+                          </span>
+                        )}
+                      </h3>
                       <p className="text-sm text-gray-500">
-                        #{patient.patientId} • {patient.gender}
+                        #{patient.patientId} • {patient.gender} • {formatDate(patient.dob)}
                       </p>
                     </div>
                     <div className="flex space-x-2">

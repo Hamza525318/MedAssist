@@ -11,6 +11,18 @@ interface AddHistoryModalProps {
   onSuccess: () => void;
 }
 
+// Medical history types matching those in AddPatientModal
+const medicalHistoryTypes = [
+  'Orthopedic',
+  'Pathology',
+  'Neurology',
+  'Cardiology',
+  'Dermatology',
+  'Endocrinology',
+  'Gastroenterology',
+  'Other'
+];
+
 const AddHistoryModal: React.FC<AddHistoryModalProps> = ({
   isOpen,
   onClose,
@@ -101,14 +113,11 @@ const AddHistoryModal: React.FC<AddHistoryModalProps> = ({
               disabled={isSubmitting}
             >
               <option value="">Select history type</option>
-              <option value="Diagnosis">Diagnosis</option>
-              <option value="Treatment">Treatment</option>
-              <option value="Medication">Medication</option>
-              <option value="Surgery">Surgery</option>
-              <option value="Allergy">Allergy</option>
-              <option value="Lab Result">Lab Result</option>
-              <option value="Vital Signs">Vital Signs</option>
-              <option value="General Note">General Note</option>
+              {medicalHistoryTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
             </select>
           </div>
 
