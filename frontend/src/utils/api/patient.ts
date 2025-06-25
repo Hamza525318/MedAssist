@@ -114,6 +114,24 @@ export const updatePatient = async (patientData: UpdatePatientData): Promise<{ s
   }
 };
 
+export const exportPatientHistoryPDF = async (patientId: string): Promise<Blob> => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/patients/generate-history-pdf/${patientId}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+      responseType: 'blob', // Important: This tells axios to handle the response as a binary blob
+    });
+    
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.message || 'Failed to export patient history');
+    }
+    throw new Error('Failed to export patient history');
+  }
+};
+
 /**
  * Function to search patients by query (name, contact number, or patient ID)
  * @param search Search query string
@@ -134,4 +152,8 @@ export const searchPatient = async (search: string): Promise<{ success: boolean;
     }
     throw new Error('Failed to search patients');
   }
+
+  
+
+  
 };

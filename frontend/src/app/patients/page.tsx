@@ -12,6 +12,44 @@ import { useRouter } from 'next/navigation';
 import { authApi, getAuthToken } from '@/utils/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAuthGuard } from '@/hooks/useAuthProfile';
+import ExportPatientModal from '@/components/patients/ExportPatientModal';
+
+export const MaleIcon = (props) => (
+  <svg
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <circle cx="10" cy="14" r="5" />
+    <path d="M19 5L13.5 10.5" />
+    <path d="M16 3h5v5" />
+  </svg>
+);
+
+export const FemaleIcon = (props) => (
+  <svg
+    width="24"
+    height="24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    viewBox="0 0 24 24"
+    {...props}
+  >
+    <circle cx="12" cy="8" r="5" />
+    <line x1="12" y1="13" x2="12" y2="21" />
+    <line x1="9" y1="18" x2="15" y2="18" />
+  </svg>
+);
+
 
 export default function PatientsPage() {
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
@@ -33,6 +71,8 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<PatientData[]>([]);
   const [isFetching, setIsFetching] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [patientToExport, setPatientToExport] = useState<PatientData | null>(null);
   const router = useRouter();
   const {addUserData} = useAuth();
   
@@ -176,6 +216,12 @@ export default function PatientsPage() {
     e.stopPropagation(); // Prevent selecting the patient
     setPatientToDelete(patient);
     setIsDeleteModalOpen(true);
+  };
+
+  const handleExportClick = (patient: PatientData, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPatientToExport(patient);
+    setIsExportModalOpen(true);
   };
 
   // Handle patient add/update
@@ -377,9 +423,9 @@ export default function PatientsPage() {
                         {patient.gender && (
                           <span className="ml-2 text-gray-500">
                             {patient.gender.toLowerCase() === 'male' ? (
-                              <Male size={16} className="text-blue-500" />
+                              <MaleIcon size={16} className="text-green-500" />
                             ) : patient.gender.toLowerCase() === 'female' ? (
-                              <Female size={16} className="text-pink-500" />
+                              <FemaleIcon size={16} className="text-pink-500" />
                             ) : null}
                           </span>
                         )}
@@ -405,7 +451,8 @@ export default function PatientsPage() {
                       </button>
                       <button 
                         className="p-1 text-gray-500 hover:text-blue-600"
-                        title="Upload reports"
+                        title="Export Patient"
+                        onClick={(e) => handleExportClick(patient, e)}
                       >
                         <Upload size={16} />
                       </button>
@@ -501,6 +548,12 @@ export default function PatientsPage() {
         onConfirm={handleDeletePatient}
         patientName={patientToDelete?.name || ''}
         isLoading={isLoading}
+      />
+
+      <ExportPatientModal
+      isOpen={isExportModalOpen}
+      onClose={() => setIsExportModalOpen(false)}
+      patient={patientToExport}
       />
       </div>
     </DashboardLayout>

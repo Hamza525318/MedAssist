@@ -100,6 +100,7 @@ const UploadReportModal: React.FC<UploadReportModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [customType, setCustomType] = useState(false);
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -285,6 +286,8 @@ const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   console.log("PRESCRIPTION EDIT",prescriptionToEdit);
 
+ 
+
   // Update canvas size when container size changes
   useEffect(() => {
     const updateCanvasSize = () => {
@@ -296,7 +299,6 @@ const PrescriptionModal: React.FC<PrescriptionModalProps> = ({
         });
       }
     };
-
     updateCanvasSize();
     window.addEventListener('resize', updateCanvasSize);
     return () => window.removeEventListener('resize', updateCanvasSize);
@@ -711,6 +713,16 @@ const PatientDetailTabs: React.FC<PatientDetailsTabsProps> = ({ patient, onRefre
     }
   };
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
   const fetchReports = useCallback(async () => {
     if (!patient?.patientId) return;
     
@@ -978,7 +990,7 @@ const PatientDetailTabs: React.FC<PatientDetailsTabsProps> = ({ patient, onRefre
                 
                 <div className="mb-4">
                   <p className="text-sm text-gray-500 mb-1">Date of Birth</p>
-                  <p className="font-medium">{patient.dob}</p>
+                  <p className="font-medium">{formatDate(patient.dob)}</p>
                 </div>
               </div>
               
@@ -1025,7 +1037,7 @@ const PatientDetailTabs: React.FC<PatientDetailsTabsProps> = ({ patient, onRefre
                     <div className="mb-2">
                       <span className="text-sm font-medium text-gray-800">{item.field}</span>
                       <span className="mx-2 text-gray-300">•</span>
-                      <span className="text-sm text-gray-500">{item.date}</span>
+                      <span className="text-sm text-gray-500">{formatDate(item.date)}</span>
                     </div>
                     
                     <p className="text-gray-700 mb-2">{item.note}</p>

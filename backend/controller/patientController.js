@@ -6,6 +6,7 @@ const Patient = require("../models/Patient");
 const LabReport = require("../models/LabReport");
 const cloudinary = require("../utils/cloudinary");
 const generatePatientId = require("../utils/generatedPatientId");
+const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 
 const createNewPatient = async (req, res) => {
   const { name, dob, gender, contact, address, history,age } = req.body;
@@ -388,6 +389,263 @@ const searchPatientByQuery = async (req, res) => {
   }
 };
 
+// Generate Patient Medical History PDF
+const generatePatientHistoryPDF = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    // Find patient with all details
+    const patient = await Patient.findOne({ patientId }).populate('labReports');
+    
+    if (!patient) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Patient not found' 
+      });
+    }
+
+    // Format date function
+    const formatDate = (date) => {
+      if (!date) return 'N/A';
+      return new Date(date).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    };
+
+    // Create PDF document
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595, 842]); // A4 size
+    const { width, height } = page.getSize();
+    
+    // Embed fonts
+    const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    
+    // Set initial position
+    let y = height - 50;
+    const leftMargin = 50;
+    
+    // Draw header
+    page.drawText('PATIENT MEDICAL RECORD', { 
+      x: width / 2 - 100, 
+      y, 
+      size: 16, 
+      font: boldFont,
+      color: rgb(0, 0.5, 0.5) // Teal color
+    });
+    
+    // Draw patient basic info
+    y -= 40;
+    page.drawText(`Patient ID: ${patient.patientId}`, { x: leftMargin, y, size: 12, font: boldFont });
+    y -= 25;
+    page.drawText(`Name: ${patient.name}`, { x: leftMargin, y, size: 12, font: regularFont });
+    y -= 20;
+    page.drawText(`Gender: ${patient.gender}`, { x: leftMargin, y, size: 12, font: regularFont });
+    y -= 20;
+    page.drawText(`Date of Birth: ${formatDate(patient.dob)} (Age: ${patient.age})`, { x: leftMargin, y, size: 12, font: regularFont });
+    
+    if (patient.contactNumber) {
+      y -= 20;
+      page.drawText(`Contact: ${patient.contactNumber}`, { x: leftMargin, y, size: 12, font: regularFont });
+    }
+    
+    if (patient.email) {
+      y -= 20;
+      page.drawText(`Email: ${patient.email}`, { x: leftMargin, y, size: 12, font: regularFont });
+    }
+    
+    if (patient.address) {
+      y -= 20;
+      page.drawText(`Address: ${patient.address}`, { x: leftMargin, y, size: 12, font: regularFont });
+    }
+    
+    // Draw line separator
+    y -= 30;
+    page.drawLine({
+      start: { x: leftMargin, y },
+      end: { x: width - leftMargin, y },
+      thickness: 1,
+      color: rgb(0.7, 0.7, 0.7),
+    });
+    
+    // Draw medical history section
+    y -= 30;
+    page.drawText('MEDICAL HISTORY', { x: leftMargin, y, size: 14, font: boldFont, color: rgb(0, 0.5, 0.5) });
+    
+    if (patient.history && patient.history.length > 0) {
+      // Sort history by date (newest first)
+      const sortedHistory = [...patient.history].sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      y -= 20;
+      sortedHistory.forEach((item, index) => {
+        // Check if we need a new page
+        if (y < 100) {
+          // Add new page
+          page = pdfDoc.addPage([595, 842]);
+          y = height - 50;
+          page.drawText('MEDICAL HISTORY (Continued)', { 
+            x: leftMargin, 
+            y, 
+            size: 14, 
+            font: boldFont,
+            color: rgb(0, 0.5, 0.5)
+          });
+          y -= 30;
+        }
+        
+        // Draw history item
+        page.drawText(`${index + 1}. ${item.field} (${formatDate(item.date)})`, { 
+          x: leftMargin, 
+          y, 
+          size: 12, 
+          font: boldFont 
+        });
+        y -= 20;
+        
+        // Handle multi-line notes by wrapping text
+        const noteLines = wrapText(item.note, 70); // ~70 chars per line
+        noteLines.forEach(line => {
+          page.drawText(line, { x: leftMargin + 15, y, size: 11, font: regularFont });
+          y -= 18;
+        });
+        
+        y -= 10; // Extra space between history items
+      });
+    } else {
+      y -= 20;
+      page.drawText('No medical history records available.', { x: leftMargin + 15, y, size: 11, font: regularFont, color: rgb(0.5, 0.5, 0.5) });
+      y -= 20;
+    }
+    
+    // Draw line separator
+    y -= 20;
+    page.drawLine({
+      start: { x: leftMargin, y },
+      end: { x: width - leftMargin, y },
+      thickness: 1,
+      color: rgb(0.7, 0.7, 0.7),
+    });
+    
+    // Draw lab reports section if available
+    y -= 30;
+    page.drawText('LAB REPORTS', { x: leftMargin, y, size: 14, font: boldFont, color: rgb(0, 0.5, 0.5) });
+    
+    if (patient.labReports && patient.labReports.length > 0) {
+      y -= 20;
+      patient.labReports.forEach((report, index) => {
+        // Check if we need a new page
+        if (y < 100) {
+          // Add new page
+          page = pdfDoc.addPage([595, 842]);
+          y = height - 50;
+          page.drawText('LAB REPORTS (Continued)', { 
+            x: leftMargin, 
+            y, 
+            size: 14, 
+            font: boldFont,
+            color: rgb(0, 0.5, 0.5)
+          });
+          y -= 30;
+        }
+        
+        // Draw report info
+        page.drawText(`${index + 1}. ${report.reportType || 'Lab Report'} (${formatDate(report.date)})`, { 
+          x: leftMargin, 
+          y, 
+          size: 12, 
+          font: boldFont 
+        });
+        y -= 20;
+        
+        if (report.description) {
+          const descLines = wrapText(report.description, 70);
+          descLines.forEach(line => {
+            page.drawText(line, { x: leftMargin + 15, y, size: 11, font: regularFont });
+            y -= 18;
+          });
+        }
+        
+        if (report.fileUrl) {
+          page.drawText(`File available online`, { 
+            x: leftMargin + 15, 
+            y, 
+            size: 11, 
+            font: regularFont,
+            color: rgb(0, 0, 0.8)
+          });
+          y -= 18;
+        }
+        
+        y -= 10; // Extra space between reports
+      });
+    } else {
+      y -= 20;
+      page.drawText('No lab reports available.', { x: leftMargin + 15, y, size: 11, font: regularFont, color: rgb(0.5, 0.5, 0.5) });
+      y -= 20;
+    }
+    
+    // Add footer with generation date
+    const lastPage = pdfDoc.getPages()[pdfDoc.getPageCount() - 1];
+    lastPage.drawText(`Generated on: ${formatDate(new Date())}`, { 
+      x: width - 200, 
+      y: 30, 
+      size: 10, 
+      font: regularFont,
+      color: rgb(0.5, 0.5, 0.5)
+    });
+    
+    // Save PDF to file
+    const pdfBytes = await pdfDoc.save();
+    const fileName = `patient_${patient.patientId}_history_${Date.now()}.pdf`;
+    const filePath = path.join(__dirname, `../../backend/uploads/patients/${fileName}`);
+    
+    // Ensure directory exists
+    const dir = path.dirname(filePath);
+    await fs.promises.mkdir(dir, { recursive: true });
+    
+    // Write file
+    await fs.promises.writeFile(filePath, pdfBytes);
+    
+    // Send file as response
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+    
+  } catch (err) {
+    console.error('Generate Patient History PDF Error:', err);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// Helper function to wrap text
+function wrapText(text, maxCharsPerLine) {
+  if (!text) return ['N/A'];
+  
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = '';
+  
+  words.forEach(word => {
+    if ((currentLine + word).length > maxCharsPerLine) {
+      lines.push(currentLine.trim());
+      currentLine = word + ' ';
+    } else {
+      currentLine += word + ' ';
+    }
+  });
+  
+  if (currentLine.trim()) {
+    lines.push(currentLine.trim());
+  }
+  
+  return lines.length ? lines : ['N/A'];
+}
+
 module.exports = {
   createNewPatient,
   getPatientDetails,
@@ -397,5 +655,6 @@ module.exports = {
   getAllPatientDetails,
   deletePatient,
   deleteReport,
-  searchPatientByQuery
+  searchPatientByQuery,
+  generatePatientHistoryPDF
 };

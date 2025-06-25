@@ -13,6 +13,7 @@ const {
   deletePatient,
   deleteReport,
   searchPatientByQuery,
+  generatePatientHistoryPDF,
 } = require("../controller/patientController");
 const router = express.Router();
 
@@ -47,6 +48,7 @@ router.post("/delete-lab-report", verifyJwt,deleteReport);
 router.post("/get-patient-reports", verifyJwt, fetchPatientReports);
 router.post("/get-all-patients", verifyJwt, getAllPatientDetails);
 router.post("/delete-patient", verifyJwt, deletePatient);
-router.get("/search-patient",verifyJwt,searchPatientByQuery)
+router.get("/search-patient",verifyJwt,searchPatientByQuery);
+router.get("/generate-history-pdf/:patientId", verifyJwt, generatePatientHistoryPDF);
 
 module.exports = router;
