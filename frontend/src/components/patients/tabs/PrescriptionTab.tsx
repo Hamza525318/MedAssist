@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pill, Trash2, Eye } from 'lucide-react';
 import { PatientData } from '@/types';
 import { Prescription } from '@/utils/api/prescription';
-import PDFViewerModal from '../PDFViewerModal';
+import PrescriptionDetailsModal from '../PrescriptionDetailsModal';
 
 interface PrescriptionTabProps {
   prescriptions: Prescription[];
@@ -23,18 +23,16 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({
   onEditPrescription,
   onDeletePrescription
 }) => {
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [selectedPdfUrl, setSelectedPdfUrl] = useState<string>('');
-  const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
 
-  const handleOpenPdf = (pdfUrl: string, prescriptionId: string) => {
-    setSelectedPdfUrl(pdfUrl);
-    setSelectedPrescriptionId(prescriptionId);
-    setIsPdfModalOpen(true);
+  const handleViewPrescription = (prescription: Prescription) => {
+    setSelectedPrescription(prescription);
+    setIsModalOpen(true);
   };
 
-  const handleClosePdf = () => {
-    setIsPdfModalOpen(false);
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
   };
 
   return (
@@ -81,15 +79,13 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({
                   </p>
                 </div>
                 <div className="flex space-x-2">
-                  {prescription.pdfUrl && (
-                    <button
-                      onClick={() => handleOpenPdf(prescription.pdfUrl!, prescription.prescriptionId)}
-                      className="px-3 py-1 text-xs font-medium text-teal-700 bg-teal-50 rounded-md hover:bg-teal-100 flex items-center"
-                    >
-                      <Eye size={12} className="mr-1" />
-                      View PDF
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleViewPrescription(prescription)}
+                    className="px-3 py-1 text-xs font-medium text-teal-700 bg-teal-50 rounded-md hover:bg-teal-100 flex items-center"
+                  >
+                    <Eye size={12} className="mr-1" />
+                    View Details
+                  </button>
                   <button
                     onClick={() => onEditPrescription(prescription)}
                     className="px-3 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100"
@@ -129,12 +125,11 @@ const PrescriptionTab: React.FC<PrescriptionTabProps> = ({
         </div>
       )}
 
-      {/* PDF Viewer Modal */}
-      <PDFViewerModal
-        isOpen={isPdfModalOpen}
-        onClose={handleClosePdf}
-        fileUrl={selectedPdfUrl}
-        fileName={`Prescription #${selectedPrescriptionId}`}
+      {/* Prescription Details Modal */}
+      <PrescriptionDetailsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        prescription={selectedPrescription}
       />
     </div>
   );

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
-import { usePathname, useRouter } from "next/navigation";
 import "./globals.css";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProviders } from "@/providers/AuthProviders";
 import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({
@@ -31,10 +30,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${poppins.variable} font-inter antialiased`}>
-        <AuthProvider>
+        <AuthProviders>
           {children}
           <Toaster position="top-right" />
-        </AuthProvider>
+        </AuthProviders>
       </body>
     </html>
   );

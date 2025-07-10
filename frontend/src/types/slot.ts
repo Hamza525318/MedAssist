@@ -17,6 +17,7 @@ export interface CreateSlotData {
   endHour: number;
   capacity: number;
   location: string;
+  doctorId?: string;
 }
 
 export interface UpdateSlotData {
@@ -25,6 +26,7 @@ export interface UpdateSlotData {
   endHour?: number;
   capacity?: number;
   location?: string;
+  doctorId?: string;
 }
 
 export interface SlotFilters {

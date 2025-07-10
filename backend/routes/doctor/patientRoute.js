@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const express = require("express");
 const multer = require("multer");
-const verifyJwt = require("../middleware/auth");
+const verifyJwt = require("../../middleware/auth");
 const {
   createNewPatient,
   getPatientDetails,
@@ -14,7 +14,7 @@ const {
   deleteReport,
   searchPatientByQuery,
   generatePatientHistoryPDF,
-} = require("../controller/patientController");
+} = require("../../controller/patientController");
 const router = express.Router();
 
 // Configure multer storage: save files under /uploads

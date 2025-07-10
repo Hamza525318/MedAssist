@@ -1,5 +1,5 @@
 const express = require('express');
-const { createPrescription, getAllPrescriptions, getPrescriptionsByPatientId, getPrescriptionById, updatePrescription, deletePrescription } = require('../controller/prescriptionController');
+const { createPrescription, getAllPrescriptions, getPrescriptionsByPatientId, getPrescriptionById, updatePrescription, deletePrescription } = require('../../controller/prescriptionController');
 const router = express.Router();
 
 router.post('/create', createPrescription);

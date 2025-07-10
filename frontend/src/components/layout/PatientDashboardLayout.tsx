@@ -15,8 +15,7 @@ import {
   Pill,
   Award
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { patientAuthApi, removePatientAuthToken } from '@/utils/api/users/auth';
+import { usePatientAuth } from '@/contexts/PatientAuthContext';
 import { useRouter } from 'next/navigation';
 
 interface PatientDashboardLayoutProps {
@@ -26,18 +25,15 @@ interface PatientDashboardLayoutProps {
 const PatientDashboardLayout: React.FC<PatientDashboardLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { patient, isAuthenticated, logout } = usePatientAuth();
   const router = useRouter();
 
-  // No API calls as requested, but keeping the structure similar to DashboardLayout
+  // Check if patient is authenticated, redirect to login if not
   useEffect(() => {
-    const checkAuth = () => {
-      // In a real implementation, we would check for patient authentication here
-      // For now, we're just keeping the structure
-    };
-
-    checkAuth();
-  }, [router]);
+    if (!isAuthenticated) {
+      router.push('/auth/patients/login');
+    }
+  }, [isAuthenticated]);
 
   const navItems = [
     { name: 'Dashboard', href: '/patient/dashboard', icon: Home },
@@ -52,22 +48,8 @@ const PatientDashboardLayout: React.FC<PatientDashboardLayoutProps> = ({ childre
     setSidebarOpen(!sidebarOpen);
   };
 
-  const handleLogout = async () => {
-    try {
-      // Call the logout API
-      await patientAuthApi.logout();
-      
-      // Remove token from localStorage
-      removePatientAuthToken();
-      
-      // Redirect to login page
-      router.push('/auth/patients/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Even if API call fails, still remove token and redirect
-      removePatientAuthToken();
-      router.push('/auth/patients/login');
-    }
+  const handleLogout = () => {
+    logout();
   };
 
   return (
@@ -154,11 +136,11 @@ const PatientDashboardLayout: React.FC<PatientDashboardLayoutProps> = ({ childre
                 </button>
                 <div className="flex items-center">
                   <div className="mr-3 text-right hidden sm:block">
-                    <p className="text-sm font-medium text-gray-700">Hello, {user?.name || 'Patient'}</p>
+                    <p className="text-sm font-medium text-gray-700">Hello, {patient?.name || 'Patient'}</p>
                     <p className="text-xs text-gray-500">Patient</p>
                   </div>
                   <div className="h-10 w-10 rounded-full bg-teal-700 flex items-center justify-center text-white font-medium">
-                    {user?.name ? user.name.slice(0, 2).toUpperCase() : 'P'}
+                    {patient?.name ? patient.name.slice(0, 2).toUpperCase() : 'P'}
                   </div>
                 </div>
               </div>

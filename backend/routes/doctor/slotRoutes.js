@@ -5,8 +5,8 @@ const {
   getSlots,
   updateSlot,
   deleteSlot
-} = require('../controller/slotController');
-const verifyJwt = require("../middleware/auth")
+} = require('../../controller/slotController');
+const verifyJwt = require("../../middleware/auth")
 
 
 router.post("/get-slots",verifyJwt,getSlots);

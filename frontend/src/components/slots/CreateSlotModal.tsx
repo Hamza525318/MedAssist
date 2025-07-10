@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { CreateSlotData, Slot } from '@/types/slot';
+import { getAllDoctors } from '@/utils/api/slot';
 
 interface CreateSlotModalProps {
   isOpen: boolean;
@@ -20,10 +21,35 @@ export default function CreateSlotModal({
     startHour: 9,
     endHour: 10,
     capacity: 1,
-    location: ''
+    location: '',
+    doctorId: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [doctors, setDoctors] = useState<Array<{_id: string, name: string}>>([]);
+  const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
+  const [doctorError, setDoctorError] = useState<string | null>(null);
+
+  // Fetch doctors when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchDoctors();
+    }
+  }, [isOpen]);
+
+  const fetchDoctors = async () => {
+    setIsLoadingDoctors(true);
+    setDoctorError(null);
+    try {
+      const doctorsList = await getAllDoctors();
+      setDoctors(doctorsList);
+    } catch (error) {
+      console.error('Error fetching doctors:', error);
+      setDoctorError('Failed to load doctors list');
+    } finally {
+      setIsLoadingDoctors(false);
+    }
+  };
 
   // Reset form when slot changes or modal opens/closes
   useEffect(() => {
@@ -38,7 +64,8 @@ export default function CreateSlotModal({
           startHour: slot.startHour,
           endHour: slot.endHour,
           capacity: slot.capacity,
-          location: slot.location || ''
+          location: slot.location || '',
+          doctorId: slot.doctorId
         });
       } else {
         // Reset form for new slot
@@ -47,7 +74,8 @@ export default function CreateSlotModal({
           startHour: 9,
           endHour: 10,
           capacity: 1,
-          location: ''
+          location: '',
+          doctorId: ''
         });
       }
       setErrors({});
@@ -64,6 +92,10 @@ export default function CreateSlotModal({
     
     if (!formData.location) {
       newErrors.location = 'Location is required';
+    }
+    
+    if (!formData.doctorId) {
+      newErrors.doctorId = 'Doctor is required';
     }
     
     // End time must be after start time
@@ -114,6 +146,36 @@ export default function CreateSlotModal({
         <h2 className="mb-6 text-xl font-semibold">{slot ? 'Edit Slot' : 'Create New Slot'}</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="doctorId" className="block text-sm font-medium text-gray-700">
+              Doctor
+            </label>
+            <select
+              id="doctorId"
+              required
+              value={formData.doctorId}
+              onChange={(e) => setFormData({ ...formData, doctorId: e.target.value })}
+              className={`mt-1 block w-full rounded-md border ${errors.doctorId ? 'border-red-500' : 'border-gray-300'} px-3 py-2 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500`}
+              disabled={isLoadingDoctors}
+            >
+              <option value="">Select a doctor</option>
+              {doctors.map((doctor) => (
+                <option key={doctor._id} value={doctor._id}>
+                  {doctor.name}
+                </option>
+              ))}
+            </select>
+            {errors.doctorId && (
+              <p className="mt-1 text-sm text-red-600">{errors.doctorId}</p>
+            )}
+            {doctorError && (
+              <p className="mt-1 text-sm text-red-600">{doctorError}</p>
+            )}
+            {isLoadingDoctors && (
+              <p className="mt-1 text-sm text-gray-500">Loading doctors...</p>
+            )}
+          </div>
+          
           <div>
             <label htmlFor="date" className="block text-sm font-medium text-gray-700">
               Date
@@ -234,4 +296,4 @@ export default function CreateSlotModal({
       </div>
     </div>
   );
-} 
+}

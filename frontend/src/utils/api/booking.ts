@@ -71,12 +71,13 @@ export const getBookings = async (params: GetBookingsParams = {}): Promise<GetBo
 
 export const deleteBooking = async (bookingId: string): Promise<{ success: boolean; message: string }> => {
   try {
+    console.log("DELETE BOOKING ID",bookingId);
     const token = getAuthToken();
     if (!token) {
       throw new Error('Authentication required');
     }
 
-    const response = await axios.delete(`${API_BASE_URL}/bookings/${bookingId}`, {
+    const response = await axios.delete(`${API_BASE_URL}/bookings/delete-booking/${bookingId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },

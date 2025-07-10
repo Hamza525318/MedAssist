@@ -394,8 +394,13 @@ const generatePatientHistoryPDF = async (req, res) => {
   try {
     const { patientId } = req.params;
 
-    // Find patient with all details
-    const patient = await Patient.findOne({ patientId }).populate('labReports');
+    // Find patient with all details and populate the addedBy field in history
+    const patient = await Patient.findOne({ patientId })
+      .populate('labReports')
+      .populate({
+        path: 'history.addedBy',
+        select: 'name' // Only get the name of the user who added the history
+      });
     
     if (!patient) {
       return res.status(404).json({ 
@@ -477,6 +482,7 @@ const generatePatientHistoryPDF = async (req, res) => {
     if (patient.history && patient.history.length > 0) {
       // Sort history by date (newest first)
       const sortedHistory = [...patient.history].sort((a, b) => new Date(b.date) - new Date(a.date));
+      console.log("Sorted History", patient.history);
       
       y -= 20;
       sortedHistory.forEach((item, index) => {
@@ -495,8 +501,11 @@ const generatePatientHistoryPDF = async (req, res) => {
           y -= 30;
         }
         
-        // Draw history item
-        page.drawText(`${index + 1}. ${item.field} (${formatDate(item.date)})`, { 
+        // Get the name of the person who added this history entry
+        const addedByName = item.addedBy ? item.addedBy.name : 'System';
+        
+        // Draw history item with the name of who added it
+        page.drawText(`${index + 1}. ${item.field} (${formatDate(item.date)}) - Added by: ${addedByName}`, { 
           x: leftMargin, 
           y, 
           size: 12, 

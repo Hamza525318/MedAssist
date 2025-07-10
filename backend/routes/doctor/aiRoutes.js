@@ -1,7 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
-const { chat, uploadReportForAI } = require('../controller/chatController');
-const verifyJwt = require('../middleware/auth');
+const { chat, uploadReportForAI } = require('../../controller/chatController');
+const verifyJwt = require('../../middleware/auth');
 
 const router = express.Router();
 

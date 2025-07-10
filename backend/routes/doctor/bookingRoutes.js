@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const verifyJwt = require('../middleware/auth');
+const verifyJwt = require('../../middleware/auth');
 const {
   createBooking,
   getBookings,
@@ -8,7 +8,7 @@ const {
   deleteBooking,
   rescheduleBookingsBySlot,
   rescheduleSingleBooking
-} = require('../controller/bookingController');
+} = require('../../controller/bookingController');
 
 
 

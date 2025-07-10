@@ -305,6 +305,7 @@ const updateBooking = async (req, res) => {
 const deleteBooking = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log("DELETE BOOKING ID",id);
 
     // Find booking
     const booking = await BookingRequest.findById(id);
@@ -324,13 +325,12 @@ const deleteBooking = async (req, res) => {
       });
     }
 
-    // Decrement slot's booked count if booking was accepted
-    if (booking.status === 'Accepted') {
-      await slot.decrementBookedCount();
-    }
+    await slot.decrementBookedCount();
 
     // Delete booking
     await booking.deleteOne();
+
+    console.log("BOOKING DELETED SUCCESSFULLY")
 
     return res.status(200).json({
       success: true,

@@ -1,5 +1,5 @@
 const express = require("express");
-const { loginUser, registerUser, getProfile } = require("../controller/userController");
+const { loginUser, registerUser, getProfile, getAllDoctors } = require("../controller/userController");
 const verifyJwt = require("../middleware/auth");
 const verifyJwtPatient = require("../middleware/authPatient")
 const {registerPatient,loginPatient,forgotPassword,resetPassword,logout,getMe} = require("../controller/user/authController")
@@ -10,6 +10,7 @@ router.post("/login", loginUser);
 router.post("/register", registerUser);
 // Protected routes (require JWT)
 router.get("/profile", verifyJwt, getProfile);
+router.get("/doctors", verifyJwt, getAllDoctors);
 
 // Patient auth routes
 router.post("/patients/register", registerPatient);

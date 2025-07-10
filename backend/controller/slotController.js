@@ -3,9 +3,11 @@ const Slot = require('../models/Slot');
 // Create a new slot
 const createSlot = async (req, res) => {
   try {
-    const { date, startHour, endHour, capacity, location } = req.body;
+    const { date, startHour, endHour, capacity, location, doctorId } = req.body;
     console.log("CREATE SLOT DATA", req.body);
-    const doctorId = req.user.id; // From auth middleware
+    
+    // Use doctorId from request body if provided, otherwise use the authenticated user's ID
+    const slotDoctorId = doctorId || req.user.id;
 
     // Validate required fields
     if (!date || !startHour || !endHour || !capacity || !location) {
@@ -25,7 +27,7 @@ const createSlot = async (req, res) => {
 
     // Create new slot
     const slot = await Slot.create({
-      doctorId,
+      doctorId: slotDoctorId,
       date,
       startHour,
       endHour,

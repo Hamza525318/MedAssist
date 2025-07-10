@@ -108,3 +108,23 @@ export const deleteSlot = async (id: string): Promise<void> => {
     throw error;
   }
 }; 
+
+// Get all doctors (only id and name)
+export const getAllDoctors = async (): Promise<{_id: string, name: string}[]> => {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await axios.get(`${API_BASE_URL}/auth/doctors`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching doctors:', error);
+    throw error;
+  }
+};

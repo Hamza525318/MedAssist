@@ -992,6 +992,11 @@ const PatientDetailTabs: React.FC<PatientDetailsTabsProps> = ({ patient, onRefre
                   <p className="text-sm text-gray-500 mb-1">Date of Birth</p>
                   <p className="font-medium">{formatDate(patient.dob)}</p>
                 </div>
+
+                <div className="mb-4">
+                  <p className="text-sm text-gray-500 mb-1">Age</p>
+                  <p className="font-medium">{patient.age}</p>
+                </div>
               </div>
               
               <div>
@@ -1027,7 +1032,7 @@ const PatientDetailTabs: React.FC<PatientDetailsTabsProps> = ({ patient, onRefre
               </button>
             </div>
             
-            {patient?.history?.length > 0 ? (
+            {patient.history && patient.history.length > 0 ? (
               <div className="space-y-6">
                 {patient.history?.map((item, ind) => (
                   <div key={ind} className="relative pl-6 pb-6 border-l-2 border-gray-200">

@@ -111,8 +111,28 @@ const getProfile = async (req, res) => {
   }
 };
 
+/**
+ * Get all doctors (only id and name)
+ * @route GET /api/users/doctors
+ */
+const getAllDoctors = async (req, res) => {
+  try {
+    // Find all users with role "Doctor" and select only _id and name fields
+    const doctors = await User.find({ role: "Doctor" }).select('_id name');
+    
+    return res.json({
+      success: true,
+      data: doctors
+    });
+  } catch (err) {
+    console.error("Get All Doctors Error:", err);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getProfile,
+  getAllDoctors,
 };

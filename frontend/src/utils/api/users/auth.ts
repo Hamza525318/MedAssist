@@ -174,6 +174,44 @@ export const patientAuthApi = {
   },
 
   /**
+   * Update the patient profile
+   * @param profileData Patient profile data to update
+   * @returns Promise with the updated patient profile
+   */
+  updateProfile: async (profileData: {
+    name?: string;
+    email?: string;
+    dob?: string;
+    gender?: string;
+    contactNumber?: string;
+    address?: string;
+  }): Promise<AuthResponse> => {
+    try {
+      const token = getPatientAuthToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await axios.put(
+        `${API_BASE_URL}/patient/profile`,
+        profileData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Failed to update profile');
+      }
+      throw error;
+    }
+  },
+
+  /**
    * Send a password reset request
    * @param email Patient's email address
    * @returns Promise with response

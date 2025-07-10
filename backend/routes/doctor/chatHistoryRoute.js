@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const verifyJwt = require('../middleware/auth');
-const { createChat, getAllChats, getMessagesByChatId, deleteChatById, updateChatById, testHDBQuota, deleteMessageById } = require('../controller/chatHistoryController');
+const verifyJwt = require('../../middleware/auth');
+const { createChat, getAllChats, getMessagesByChatId, deleteChatById, updateChatById, testHDBQuota, deleteMessageById } = require('../../controller/chatHistoryController');
 
 router.post('/create-chat', verifyJwt, createChat);
 router.get('/get-all-chats', verifyJwt, getAllChats);
